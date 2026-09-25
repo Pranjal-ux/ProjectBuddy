@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@layer base {
+  :root,
+  [data-theme="charcoal"] {
+    --bg-canvas: #13131b;
+    --bg-surface: #13131b;
+    --bg-surface-lowest: #0d0d15;
+    --bg-surface-low: #1b1b23;
+    --bg-surface-container: #1f1f27;
+    --bg-surface-high: #292932;
+    --bg-surface-highest: #34343d;
+    --border-subtle: #262633;
+    --border-strong: #34343d;
+    --border-focus: #6366f1;
+    --color-primary: #6366f1;
+    --color-primary-light: #c0c1ff;
+    --color-primary-container: #4f46e5;
+    --color-secondary: #38bdf8;
+    --color-secondary-light: #7bd0ff;
+    --color-tertiary: #ffb783;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --badge-bg: #292932;
+    --badge-text: #c0c1ff;
+  }
+
+  [data-theme="oled"] {
+    --bg-canvas: #000000;
+    --bg-surface: #000000;
+    --bg-surface-lowest: #000000;
+    --bg-surface-low: #050505;
+    --bg-surface-container: #0a0a0a;
+    --bg-surface-high: #121212;
+    --bg-surface-highest: #171717;
+    --border-subtle: #171717;
+    --border-strong: #222222;
+    --border-focus: #6366f1;
+    --color-primary: #ffffff;
+    --color-primary-light: #ffffff;
+    --color-primary-container: #222222;
+    --color-secondary: #7bd0ff;
+    --color-secondary-light: #38bdf8;
+    --color-tertiary: #ffb783;
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --badge-bg: #121212;
+    --badge-text: #e4e4e7;
+  }
+
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
