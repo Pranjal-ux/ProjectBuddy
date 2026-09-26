@@ -1,0 +1,31 @@
+{
+  "name": "projectbuddy-backend",
+  "version": "1.0.0",
+  "description": "Backend API for ProjectBuddy using Node.js, Express, and MongoDB",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "projectbuddy",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-auth-library": "^11.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

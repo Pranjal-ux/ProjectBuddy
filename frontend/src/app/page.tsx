@@ -17,8 +17,10 @@ import { BookmarksView } from "@/components/views/BookmarksView";
 import { initialPosts, suggestedProjects, Post } from "@/data/mockData";
 import { Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AuthProvider } from "@/context/AuthContext";
+import { AuthModal } from "@/components/modals/AuthModal";
 
-export default function Home() {
+function HomeContent() {
   const [activeTab, setActiveTab] = useState("home");
   const [feedFilter, setFeedFilter] = useState<
     "for-you" | "following" | "open-teams" | "showcases"
@@ -273,5 +275,14 @@ export default function Home() {
         }}
       />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthProvider>
+      <HomeContent />
+      <AuthModal />
+    </AuthProvider>
   );
 }

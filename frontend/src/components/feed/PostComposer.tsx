@@ -15,12 +15,14 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Post } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
 
 interface PostComposerProps {
   onPublish: (newPost: Post) => void;
 }
 
 export function PostComposer({ onPublish }: PostComposerProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [title, setTitle] = useState("");
@@ -43,11 +45,11 @@ export function PostComposer({ onPublish }: PostComposerProps) {
     const newPost: Post = {
       id: `post-${Date.now()}`,
       author: {
-        name: "Pranjal Shukla",
-        handle: "@pranjal",
-        fallback: "PS",
+        name: user?.name || "Developer",
+        handle: user?.handle || "@developer",
+        fallback: user?.initials || "DEV",
         verified: true,
-        role: "Lead Creator",
+        role: user?.role || "Creator",
       },
       createdAt: "Just now",
       type: isTeamProject ? "project" : includeCode ? "code" : "discussion",
@@ -96,7 +98,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
     <div className="p-3.5 sm:p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-low)] transition-colors">
       <form onSubmit={handleSubmit} className="flex gap-2.5 sm:gap-3.5">
         <Avatar
-          fallback="PS"
+          fallback={user?.initials || "DEV"}
           size="md"
           className="bg-indigo-700 text-white shrink-0 mt-0.5"
         />

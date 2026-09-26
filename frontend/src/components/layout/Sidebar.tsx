@@ -11,10 +11,14 @@ import {
   Settings,
   Plus,
   Layers,
+  LogOut,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   activeTab: string;
@@ -23,6 +27,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarProps) {
+  const { user, isAuthenticated, logout, openAuthModal } = useAuth();
   const navItems = [
     { id: "home", label: "Home", icon: Home },
     { id: "discover", label: "Discover", icon: Compass },
@@ -145,28 +150,50 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
           </div>
         </div>
 
-        {/* User profile snippet */}
-        <div
-          onClick={() => setActiveTab("profile")}
-          className="p-2 lg:p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between hover:border-[var(--border-strong)] transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-            <div className="relative shrink-0">
-              <Avatar fallback="PS" size="sm" className="bg-indigo-700 text-white font-bold" />
-              <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface-container)]" />
+        {/* User profile snippet & Auth Controls */}
+        <div className="flex flex-col gap-2">
+          {!isAuthenticated ? (
+            <div className="p-1 lg:p-2 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex flex-col gap-1.5">
+              <button
+                onClick={() => openAuthModal("login")}
+                className="w-full flex items-center justify-center lg:justify-start gap-2 py-2 px-2.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors cursor-pointer shadow-sm shadow-indigo-600/20"
+              >
+                <LogIn className="size-3.5" />
+                <span className="hidden lg:inline">Sign In / Register</span>
+              </button>
             </div>
-            <div className="hidden lg:flex flex-col min-w-0">
-              <span className="text-sm font-medium text-white truncate leading-tight">
-                Pranjal Shukla
-              </span>
-              <span className="text-xs font-mono text-[var(--text-muted)] truncate">
-                @pranjal
-              </span>
+          ) : (
+            <div className="p-2 lg:p-2.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between hover:border-[var(--border-strong)] transition-colors">
+              <div
+                onClick={() => setActiveTab("profile")}
+                className="flex items-center gap-2 lg:gap-2.5 min-w-0 cursor-pointer flex-1"
+              >
+                <div className="relative shrink-0">
+                  <Avatar
+                    fallback={user?.initials || "DEV"}
+                    size="sm"
+                    className="bg-indigo-700 text-white font-bold"
+                  />
+                  <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface-container)]" />
+                </div>
+                <div className="hidden lg:flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-white truncate leading-tight">
+                    {user?.name || "Developer"}
+                  </span>
+                  <span className="text-[11px] font-mono text-[var(--text-muted)] truncate">
+                    {user?.handle || "@developer"}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                title="Log Out"
+                className="hidden lg:flex p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+              >
+                <LogOut className="size-3.5" />
+              </button>
             </div>
-          </div>
-          <span className="hidden lg:inline text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
-            PRO
-          </span>
+          )}
         </div>
       </aside>
 

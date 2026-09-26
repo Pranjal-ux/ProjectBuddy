@@ -4,21 +4,22 @@ import React from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, GitBranch, MapPin, Calendar, ExternalLink, Code2 } from "lucide-react";
+import { Layers, GitBranch, MapPin, Calendar, ExternalLink, Code2, UserCheck, LogIn } from "lucide-react";
 import { initialPosts } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
 
 export function ProfileView() {
-  const userProjects = initialPosts.filter((p) => p.author.handle === "@pranjal");
+  const { user, openAuthModal, isAuthenticated } = useAuth();
+  const userProjects = initialPosts.filter((p) => p.author.handle === user?.handle);
 
-  const skills = [
+  const skills = user?.skills && user.skills.length > 0 ? user.skills : [
     "Next.js 15",
     "React",
     "TypeScript",
     "TailwindCSS",
-    "shadcn/ui",
+    "Node.js",
     "Python",
     "FastAPI",
-    "YOLOv8",
     "PostgreSQL",
     "Docker",
   ];
@@ -29,37 +30,43 @@ export function ProfileView() {
       <div className="p-4 sm:p-6 rounded-2xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
         <div className="flex items-start sm:items-center gap-3.5 sm:gap-4">
           <Avatar
-            fallback="PS"
+            fallback={user?.initials || "DEV"}
             size="xl"
             className="bg-indigo-700 text-white text-lg sm:text-xl font-bold ring-2 ring-indigo-500/40 shrink-0"
           />
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg sm:text-xl font-bold text-white">Pranjal Shukla</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-white">{user?.name || "Developer Profile"}</h2>
               <span className="px-2 py-0.5 rounded-full text-xs font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                PRO DEV
+                {isAuthenticated ? "VERIFIED DEV" : "GUEST DEV"}
               </span>
             </div>
             <span className="text-xs font-mono text-[var(--text-muted)] truncate">
-              @pranjal · Fullstack & AI Systems Builder
+              {user?.handle || "@developer"} · {user?.role || "Fullstack Engineer"}
             </span>
             <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-md leading-relaxed">
-              Building next-gen AI applications, developer platforms, and computer vision systems. Always looking for buddies to hack on high-impact projects.
+              {user?.bio || "Building next-gen applications, developer platforms, and collaborative tools on ProjectBuddy."}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
-          <Button
-            variant="outline"
-            className="text-xs h-8 sm:h-9 flex-1 sm:flex-initial gap-1.5 border-[var(--border-strong)]"
-          >
-            <GitBranch className="size-3.5 sm:size-4 text-indigo-400" />
-            <span>GitHub Profile</span>
-          </Button>
-          <Button className="text-xs h-8 sm:h-9 flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white">
-            Edit Profile
-          </Button>
+          {!isAuthenticated ? (
+            <Button
+              onClick={() => openAuthModal("register")}
+              className="text-xs h-8 sm:h-9 flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5"
+            >
+              <LogIn className="size-3.5" />
+              <span>Create / Switch Account</span>
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-emerald-400 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                <UserCheck className="size-3.5" />
+                <span>Logged In</span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
