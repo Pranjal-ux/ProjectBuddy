@@ -16,6 +16,9 @@ import {
   ArrowLeft,
   ChevronRight,
   User as UserIcon,
+  Mail,
+  ShieldCheck,
+  RotateCcw,
 } from "lucide-react";
 
 const DEV_GOOGLE_ACCOUNTS = [
@@ -92,6 +95,8 @@ export function AuthModal() {
     closeAuthModal,
     login,
     register,
+    verifyOtp,
+    resendOtp,
     googleLogin,
   } = useAuth();
 
@@ -110,6 +115,14 @@ export function AuthModal() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // OTP Verification state
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpPendingEmail, setOtpPendingEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [resendingOtp, setResendingOtp] = useState(false);
 
   // Google Account Chooser (Dev / Immediate Testing Mode)
   const [showGoogleChooser, setShowGoogleChooser] = useState(false);
@@ -139,7 +152,18 @@ export function AuthModal() {
     setGoogleLoading(false);
     setShowGoogleChooser(false);
     setShowCustomInput(false);
+    setOtpStep(false);
+    setOtpCode("");
   }, [authModalMode, authModalOpen]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Load official Google Identity Services (GIS) library
   useEffect(() => {
@@ -178,8 +202,12 @@ export function AuthModal() {
     setGoogleLoading(true);
     setError(null);
     try {
-      await googleLogin({ credential });
-      setSuccessMsg("Signed in with Google successfully!");
+      await googleLogin({ credential, mode });
+      setSuccessMsg(
+        mode === "register"
+          ? "Account created and signed in with Google!"
+          : "Signed in with Google successfully!"
+      );
       setTimeout(() => {
         closeAuthModal();
         resetForm();
@@ -201,6 +229,7 @@ export function AuthModal() {
     setError(null);
     try {
       await googleLogin({
+        mode,
         devUser: {
           email: account.email,
           name: account.name,
@@ -244,8 +273,12 @@ export function AuthModal() {
           callback: async (response: any) => {
             if (response.access_token) {
               try {
-                await googleLogin({ accessToken: response.access_token });
-                setSuccessMsg("Signed in with Google successfully!");
+                await googleLogin({ accessToken: response.access_token, mode });
+                setSuccessMsg(
+                  mode === "register"
+                    ? "Account created and signed in with Google!"
+                    : "Signed in with Google successfully!"
+                );
                 setTimeout(() => {
                   closeAuthModal();
                   resetForm();
@@ -291,8 +324,12 @@ export function AuthModal() {
           callback: async (response: any) => {
             if (response.code) {
               try {
-                await googleLogin({ code: response.code });
-                setSuccessMsg("Signed in with Google successfully!");
+                await googleLogin({ code: response.code, mode });
+                setSuccessMsg(
+                  mode === "register"
+                    ? "Account created and signed in with Google!"
+                    : "Signed in with Google successfully!"
+                );
                 setTimeout(() => {
                   closeAuthModal();
                   resetForm();
@@ -358,7 +395,7 @@ export function AuthModal() {
           return;
         }
 
-        await register({
+        const res = await register({
           name: name.trim(),
           handle: handle.trim(),
           email: email.trim(),
@@ -367,11 +404,19 @@ export function AuthModal() {
           bio: bio.trim() || "Building cool software on ProjectBuddy.",
         });
 
-        setSuccessMsg("Account created successfully! Welcome aboard.");
-        setTimeout(() => {
-          closeAuthModal();
-          resetForm();
-        }, 1200);
+        if (res.requireOtp) {
+          setOtpPendingEmail(email.trim());
+          setOtpStep(true);
+          setOtpCode("");
+          setResendCooldown(30);
+          setSuccessMsg(`A 6-digit verification code was sent to ${email.trim()}`);
+        } else {
+          setSuccessMsg("Account created successfully! Welcome aboard.");
+          setTimeout(() => {
+            closeAuthModal();
+            resetForm();
+          }, 1200);
+        }
       } else {
         if (!email.trim() || !password.trim()) {
           setError("Please enter your email/handle and password.");
@@ -401,6 +446,55 @@ export function AuthModal() {
     }
   };
 
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.trim().length < 6) {
+      setError("Please enter the full 6-digit verification code.");
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      await verifyOtp({
+        email: otpPendingEmail,
+        otp: otpCode.trim(),
+      });
+
+      setSuccessMsg("Email verified successfully! Welcome to ProjectBuddy.");
+      setTimeout(() => {
+        closeAuthModal();
+        resetForm();
+      }, 1200);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to verify code. Please try again.");
+      }
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || resendingOtp) return;
+    setResendingOtp(true);
+    setError(null);
+    try {
+      await resendOtp({ email: otpPendingEmail });
+      setSuccessMsg(`New verification code sent to ${otpPendingEmail}`);
+      setResendCooldown(30);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Failed to resend code");
+    } finally {
+      setResendingOtp(false);
+    }
+  };
+
   const resetForm = () => {
     setName("");
     setHandle("");
@@ -411,6 +505,9 @@ export function AuthModal() {
     setError(null);
     setSuccessMsg(null);
     setGoogleLoading(false);
+    setOtpStep(false);
+    setOtpCode("");
+    setOtpPendingEmail("");
   };
 
   return (
@@ -418,27 +515,33 @@ export function AuthModal() {
       <DialogHeader onClose={closeAuthModal}>
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            {mode === "register" ? (
+            {otpStep ? (
+              <ShieldCheck className="size-5 text-indigo-400" />
+            ) : mode === "register" ? (
               <UserPlus className="size-5 text-indigo-400" />
             ) : (
               <LogIn className="size-5 text-indigo-400" />
             )}
             <span>
-              {mode === "register"
+              {otpStep
+                ? "Verify Your Email Address"
+                : mode === "register"
                 ? "Create Developer Account"
                 : "Sign In to ProjectBuddy"}
             </span>
           </div>
           <span className="text-xs text-[var(--text-secondary)] font-normal">
-            {mode === "register"
+            {otpStep
+              ? `Enter the 6-digit code sent to ${otpPendingEmail}`
+              : mode === "register"
               ? "Join thousands of builders collaborating on high-impact projects."
               : "Welcome back! Enter your credentials to access your account."}
           </span>
         </div>
       </DialogHeader>
 
-      {/* Mode Tabs (Only when not in Google Account Chooser) */}
-      {!showGoogleChooser && (
+      {/* Mode Tabs (Only when not in Google Account Chooser and not in OTP Step) */}
+      {!showGoogleChooser && !otpStep && (
         <div className="flex border-b border-[var(--border-subtle)] px-6 pt-2">
           <button
             type="button"
@@ -477,7 +580,102 @@ export function AuthModal() {
         </div>
       )}
 
-      {showGoogleChooser ? (
+      {otpStep ? (
+        <div className="p-6 flex flex-col gap-4 animate-in fade-in-50">
+          <button
+            type="button"
+            onClick={() => {
+              setOtpStep(false);
+              setError(null);
+              setSuccessMsg(null);
+            }}
+            className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors cursor-pointer w-fit"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back to edit details</span>
+          </button>
+
+          <div className="text-center py-2">
+            <div className="inline-flex p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 mb-2">
+              <Mail className="size-7 text-indigo-400" />
+            </div>
+            <h3 className="text-base font-semibold text-white">Check your Inbox</h3>
+            <p className="text-xs text-[var(--text-secondary)] max-w-xs mx-auto mt-1 leading-relaxed">
+              We sent a 6-digit verification code to <span className="text-indigo-300 font-mono font-medium">{otpPendingEmail}</span>. Enter it below to activate your account.
+            </p>
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="size-4 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4 mt-1">
+            <div className="flex flex-col items-center gap-2">
+              <label className="text-xs font-mono text-[var(--text-secondary)]">
+                6-Digit Verification Code
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                autoFocus
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="------"
+                className="w-52 text-center text-2xl font-mono font-bold tracking-[8px] h-12 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 transition-all placeholder:text-[var(--text-muted)]"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={verifyingOtp || otpCode.length < 6}
+              className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {verifyingOtp ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Verifying Code...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  <span>Verify Email & Create Account</span>
+                </>
+              )}
+            </Button>
+
+            <div className="flex items-center justify-between text-xs pt-1 px-1">
+              <span className="text-[var(--text-muted)]">Didn&apos;t receive the code?</span>
+              <button
+                type="button"
+                disabled={resendCooldown > 0 || resendingOtp}
+                onClick={handleResendOtp}
+                className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendingOtp ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <RotateCcw className="size-3" />
+                )}
+                <span>
+                  {resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : "Resend Code"}
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : showGoogleChooser ? (
         <div className="p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <button

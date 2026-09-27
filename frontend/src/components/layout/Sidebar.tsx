@@ -51,9 +51,10 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
     <>
       {/* ── Desktop & Tablet Left Sidebar ── */}
       <aside
-        className="hidden sm:flex shrink-0 h-screen sticky top-0 flex-col justify-between border-r border-[var(--border-subtle)] bg-[var(--bg-surface-low)] select-none
-        w-16 md:w-20 lg:w-64 xl:w-72
-        p-2 md:p-3 lg:p-5"
+        className={cn(
+          "hidden sm:flex shrink-0 h-screen sticky top-0 flex-col justify-between border-r border-[var(--border-subtle)] bg-[var(--bg-surface-low)] select-none",
+          "w-16 md:w-20 lg:w-64 xl:w-72 p-2 md:p-3 lg:p-5"
+        )}
       >
         <div className="flex flex-col gap-4 lg:gap-6">
           {/* Logo and Brand */}

@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../models/User.js";
+import { OtpVerification } from "../models/OtpVerification.js";
+import { sendOtpEmail } from "../utils/emailService.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "projectbuddy_dev_secret_key_2026";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -102,7 +104,7 @@ export const registerUser = async (req, res) => {
       if (existingEmail) {
         return res.status(400).json({
           success: false,
-          message: "An account with this email address already exists.",
+          message: "An account with this email address already exists. Please log in instead.",
         });
       }
 
@@ -114,39 +116,49 @@ export const registerUser = async (req, res) => {
         });
       }
 
+      // Generate 6-digit OTP code
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
       // Hash password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const user = await User.create({
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store pending registration with OTP in database
+      await OtpVerification.findOneAndUpdate(
+        { email: normalizedEmail, type: "register" },
+        {
+          email: normalizedEmail,
+          otp,
+          type: "register",
+          pendingUserData: {
+            name: name.trim(),
+            handle: formattedHandle,
+            email: normalizedEmail,
+            password: hashedPassword,
+            role: role?.trim() || "Fullstack Developer",
+            bio: bio?.trim() || "Building cool software on ProjectBuddy.",
+            initials,
+            skills: ["React", "TypeScript", "Node.js"],
+          },
+          expiresAt,
+        },
+        { upsert: true, new: true }
+      );
+
+      // Send OTP via email (or dev console fallback)
+      await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
         name: name.trim(),
-        handle: formattedHandle,
-        email: normalizedEmail,
-        password: hashedPassword,
-        role: role?.trim() || "Fullstack Developer",
-        bio: bio?.trim() || "Building cool software on ProjectBuddy.",
-        initials,
-        skills: ["React", "TypeScript", "Node.js"],
       });
 
-      const token = generateToken(user._id, user.handle, user.email);
-
-      return res.status(201).json({
+      return res.status(200).json({
         success: true,
-        message: "Account created successfully!",
-        token,
-        user: {
-          id: user._id,
-          _id: user._id,
-          name: user.name,
-          handle: user.handle,
-          email: user.email,
-          role: user.role,
-          bio: user.bio,
-          initials: user.initials,
-          skills: user.skills,
-          createdAt: user.createdAt,
-        },
+        requireOtp: true,
+        email: normalizedEmail,
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox and enter it to complete registration.`,
       });
     } else {
       // In-memory fallback
@@ -160,6 +172,7 @@ export const registerUser = async (req, res) => {
         });
       }
 
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -175,28 +188,22 @@ export const registerUser = async (req, res) => {
         bio: bio?.trim() || "Building cool software on ProjectBuddy.",
         initials,
         skills: ["React", "TypeScript", "Node.js"],
+        isEmailVerified: true,
         createdAt: new Date().toISOString(),
       };
       inMemoryUsers.push(newUser);
 
-      const token = generateToken(mockId, formattedHandle, normalizedEmail);
+      await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
+        name: name.trim(),
+      });
 
-      return res.status(201).json({
+      return res.status(200).json({
         success: true,
-        message: "Account created successfully (In-Memory Fallback)!",
-        token,
-        user: {
-          id: mockId,
-          _id: mockId,
-          name: newUser.name,
-          handle: newUser.handle,
-          email: newUser.email,
-          role: newUser.role,
-          bio: newUser.bio,
-          initials: newUser.initials,
-          skills: newUser.skills,
-          createdAt: newUser.createdAt,
-        },
+        requireOtp: true,
+        email: normalizedEmail,
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
       });
     }
   } catch (error) {
@@ -204,6 +211,188 @@ export const registerUser = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error occurred during registration",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Verify OTP and complete registration
+ * @route POST /api/auth/verify-otp
+ */
+export const verifyRegistrationOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and 6-digit OTP code are required.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.toString().trim();
+
+    if (isDbReady()) {
+      const record = await OtpVerification.findOne({
+        email: normalizedEmail,
+        type: "register",
+      });
+
+      if (!record) {
+        return res.status(400).json({
+          success: false,
+          message: "No pending verification found for this email. Please sign up again.",
+        });
+      }
+
+      if (new Date() > new Date(record.expiresAt)) {
+        return res.status(400).json({
+          success: false,
+          message: "Verification code has expired. Please click Resend Code.",
+        });
+      }
+
+      if (record.otp !== cleanOtp) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid verification code. Please check your email and try again.",
+        });
+      }
+
+      // Double check duplicate before final creation
+      const duplicate = await User.findOne({
+        $or: [
+          { email: normalizedEmail },
+          { handle: record.pendingUserData?.handle },
+        ],
+      });
+      if (duplicate) {
+        await OtpVerification.deleteOne({ _id: record._id });
+        return res.status(400).json({
+          success: false,
+          message: "An account with this email or username already exists. Please log in.",
+        });
+      }
+
+      // Create verified user in MongoDB
+      const user = await User.create({
+        ...record.pendingUserData,
+        authProvider: "local",
+        isEmailVerified: true,
+      });
+
+      // Remove OTP verification record
+      await OtpVerification.deleteOne({ _id: record._id });
+
+      const token = generateToken(user._id, user.handle, user.email);
+
+      return res.status(201).json({
+        success: true,
+        message: "Email verified successfully! Welcome to ProjectBuddy.",
+        token,
+        user: {
+          id: user._id,
+          _id: user._id,
+          name: user.name,
+          handle: user.handle,
+          email: user.email,
+          role: user.role,
+          bio: user.bio,
+          initials: user.initials,
+          skills: user.skills,
+          isEmailVerified: true,
+          authProvider: user.authProvider,
+          createdAt: user.createdAt,
+        },
+      });
+    } else {
+      // In-memory fallback
+      const token = generateToken(`usr-${Date.now()}`, "@developer", normalizedEmail);
+      return res.status(201).json({
+        success: true,
+        message: "Email verified successfully (In-Memory Fallback)!",
+        token,
+        user: {
+          id: `usr-${Date.now()}`,
+          _id: `usr-${Date.now()}`,
+          name: "Developer",
+          handle: "@developer",
+          email: normalizedEmail,
+          role: "Fullstack Developer",
+          isEmailVerified: true,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error in verifyRegistrationOtp:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error occurred during OTP verification",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Resend registration OTP
+ * @route POST /api/auth/resend-otp
+ */
+export const resendRegistrationOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required to resend verification code.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (isDbReady()) {
+      const record = await OtpVerification.findOne({
+        email: normalizedEmail,
+        type: "register",
+      });
+
+      if (!record) {
+        return res.status(404).json({
+          success: false,
+          message: "No pending registration found for this email. Please register first.",
+        });
+      }
+
+      // Generate fresh OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      record.otp = otp;
+      record.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await record.save();
+
+      await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
+        name: record.pendingUserData?.name || "Developer",
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `New verification code sent to ${normalizedEmail}`,
+      });
+    } else {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      return res.status(200).json({
+        success: true,
+        message: `New verification code sent to ${normalizedEmail}`,
+      });
+    }
+  } catch (error) {
+    console.error("Error in resendRegistrationOtp:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to resend verification code.",
       error: error.message,
     });
   }
@@ -242,6 +431,20 @@ export const loginUser = async (req, res) => {
         return res.status(401).json({
           success: false,
           message: "Invalid credentials: User not found.",
+        });
+      }
+
+      if (user.authProvider === "google" && !user.password) {
+        return res.status(400).json({
+          success: false,
+          message: "This account was registered using Google. Please click 'Continue with Google' to sign in.",
+        });
+      }
+
+      if (!user.password) {
+        return res.status(401).json({
+          success: false,
+          message: "No password set for this account. Please sign in using your OAuth provider.",
         });
       }
 
@@ -343,7 +546,7 @@ export const getMe = async (req, res) => {
  */
 export const googleAuth = async (req, res) => {
   try {
-    const { credential, accessToken, code, devUser } = req.body;
+    const { credential, accessToken, code, devUser, mode = "login" } = req.body;
 
     if (!credential && !accessToken && !code && !devUser) {
       return res.status(400).json({
@@ -534,6 +737,14 @@ export const googleAuth = async (req, res) => {
         $or: [{ email: normalizedEmail }, { googleId: sub }],
       });
 
+      // If user does not exist and mode is "login", prevent auto-creation and prompt to sign up
+      if (!user && mode === "login") {
+        return res.status(404).json({
+          success: false,
+          message: "No ProjectBuddy account found with this Google email. Please click 'Create Account' to register first.",
+        });
+      }
+
       if (user) {
         // Link googleId and avatar if not already present
         let updated = false;
@@ -545,11 +756,15 @@ export const googleAuth = async (req, res) => {
           user.avatar = picture;
           updated = true;
         }
+        if (!user.isEmailVerified) {
+          user.isEmailVerified = true;
+          updated = true;
+        }
         if (updated) {
           await user.save();
         }
       } else {
-        // New user: Create new account via Google
+        // New user: Create new account via Google (only when registering)
         const handle = await generateUniqueHandle(normalizedEmail, name);
         user = await User.create({
           name: name || normalizedEmail.split("@")[0],
@@ -557,6 +772,7 @@ export const googleAuth = async (req, res) => {
           email: normalizedEmail,
           googleId: sub,
           authProvider: "google",
+          isEmailVerified: true,
           avatar: picture,
           role: "Fullstack Developer",
           bio: "Building cool projects on ProjectBuddy with Google account.",
@@ -591,6 +807,13 @@ export const googleAuth = async (req, res) => {
       let user = inMemoryUsers.find(
         (u) => u.email === normalizedEmail || u.googleId === sub
       );
+
+      if (!user && mode === "login") {
+        return res.status(404).json({
+          success: false,
+          message: "No ProjectBuddy account found with this Google email. Please click 'Create Account' to register first.",
+        });
+      }
 
       if (!user) {
         const handle = await generateUniqueHandle(normalizedEmail, name);

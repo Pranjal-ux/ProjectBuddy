@@ -34,6 +34,8 @@ export interface AuthResponse {
   message: string;
   token?: string;
   user?: User;
+  requireOtp?: boolean;
+  email?: string;
 }
 
 export interface ActivityItem {
@@ -68,7 +70,7 @@ export interface JoinRequestPayload {
 }
 
 export const api = {
-  // Auth: Register new user
+  // Auth: Register new user (initiates email OTP verification)
   async register(payload: RegisterPayload): Promise<AuthResponse> {
     const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
@@ -80,6 +82,38 @@ export const api = {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.message || "Failed to create account");
+    }
+    return data;
+  },
+
+  // Auth: Verify 6-digit OTP code to finalize registration
+  async verifyOtp(payload: { email: string; otp: string }): Promise<AuthResponse> {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Invalid or expired verification code");
+    }
+    return data;
+  },
+
+  // Auth: Resend verification code
+  async resendOtp(payload: { email: string }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to resend verification code");
     }
     return data;
   },
@@ -105,6 +139,7 @@ export const api = {
     credential?: string;
     accessToken?: string;
     code?: string;
+    mode?: "login" | "register";
     devUser?: {
       email: string;
       name: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { api, User, LoginPayload, RegisterPayload } from "@/lib/api";
+import { api, User, LoginPayload, RegisterPayload, AuthResponse } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -9,11 +9,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<AuthResponse>;
+  verifyOtp: (payload: { email: string; otp: string }) => Promise<AuthResponse>;
+  resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string }>;
   googleLogin: (payload: {
     credential?: string;
     accessToken?: string;
     code?: string;
+    mode?: "login" | "register";
     devUser?: {
       email: string;
       name: string;
@@ -86,8 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
     const res = await api.register(payload);
+    // If user and token returned immediately (e.g. without OTP requirement)
     if (res.user && res.token) {
       setUser(res.user);
       setToken(res.token);
@@ -95,12 +99,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
       setAuthModalOpen(false);
     }
+    return res;
+  };
+
+  const verifyOtp = async (payload: { email: string; otp: string }): Promise<AuthResponse> => {
+    const res = await api.verifyOtp(payload);
+    if (res.user && res.token) {
+      setUser(res.user);
+      setToken(res.token);
+      localStorage.setItem("projectbuddy_token", res.token);
+      localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
+    }
+    return res;
+  };
+
+  const resendOtp = async (payload: { email: string }): Promise<{ success: boolean; message: string }> => {
+    return await api.resendOtp(payload);
   };
 
   const googleLogin = async (payload: {
     credential?: string;
     accessToken?: string;
     code?: string;
+    mode?: "login" | "register";
     devUser?: {
       email: string;
       name: string;
@@ -145,6 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        verifyOtp,
+        resendOtp,
         googleLogin,
         logout,
         openAuthModal,
