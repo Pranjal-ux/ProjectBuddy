@@ -98,9 +98,10 @@ export function PostComposer({ onPublish }: PostComposerProps) {
     <div className="p-3.5 sm:p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-low)] transition-colors">
       <form onSubmit={handleSubmit} className="flex gap-2.5 sm:gap-3.5">
         <Avatar
+          src={user?.avatar}
           fallback={user?.initials || "DEV"}
           size="md"
-          className="bg-indigo-700 text-white shrink-0 mt-0.5"
+          className="bg-zinc-800 text-white shrink-0 mt-0.5 border border-zinc-700"
         />
 
         <div className="flex-1 flex flex-col gap-3">
@@ -126,8 +127,8 @@ export function PostComposer({ onPublish }: PostComposerProps) {
 
           {/* Team Collaboration Drawer */}
           {isTeamProject && (
-            <div className="p-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-indigo-500/20 flex flex-col gap-3 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between text-xs font-medium text-indigo-400">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-white/20 flex flex-col gap-3 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between text-xs font-medium text-white">
                 <span className="flex items-center gap-1.5">
                   <Users className="size-3.5" />
                   Team Recruiter Settings
@@ -158,7 +159,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
                     max="8"
                     value={teamSize}
                     onChange={(e) => setTeamSize(Number(e.target.value))}
-                    className="w-full accent-indigo-500 mt-2"
+                    className="w-full accent-white mt-2"
                   />
                 </div>
               </div>
@@ -185,7 +186,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
                 onChange={(e) => setCodeContent(e.target.value)}
                 placeholder="// Paste code snippet here..."
                 rows={3}
-                className="w-full font-mono text-xs p-2.5 rounded-lg bg-[var(--bg-surface-lowest)] text-emerald-400 border border-[var(--border-subtle)] focus:outline-none focus:border-indigo-500"
+                className="w-full font-mono text-xs p-2.5 rounded-lg bg-[var(--bg-surface-lowest)] text-emerald-400 border border-[var(--border-subtle)] focus:outline-none focus:border-white"
               />
             </div>
           )}
@@ -213,7 +214,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
                 onClick={() => setIsTeamProject(!isTeamProject)}
                 className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   isTeamProject
-                    ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                    ? "bg-white/10 text-white border border-white/20"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-container)] hover:text-white"
                 }`}
                 title="Looking for team members"
@@ -227,7 +228,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
                 onClick={() => setIncludeCode(!includeCode)}
                 className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   includeCode
-                    ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                    ? "bg-white/10 text-white border border-white/20"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-container)] hover:text-white"
                 }`}
                 title="Add code snippet"
@@ -253,7 +254,7 @@ export function PostComposer({ onPublish }: PostComposerProps) {
             <Button
               type="submit"
               disabled={!content.trim() && !title.trim()}
-              className="gap-2 h-9 px-4 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-sm"
+              className="gap-2 h-9 px-4 text-xs font-semibold bg-white hover:bg-neutral-200 text-black rounded-lg shadow-sm"
             >
               <span>{isTeamProject ? "Publish Project" : "Post"}</span>
               <Send className="size-3.5" />

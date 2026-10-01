@@ -63,7 +63,7 @@ export function RightSidebar({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-indigo-400" />
+            <Sparkles className="size-4 text-white" />
             <h3 className="font-semibold text-sm text-white tracking-tight">
               Recommended Projects
             </h3>
@@ -81,10 +81,10 @@ export function RightSidebar({
               onClick={() => onQuickViewProject?.(project)}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-sm text-white group-hover:text-indigo-300 transition-colors">
+                <span className="font-medium text-sm text-white group-hover:text-white transition-colors">
                   {project.title}
                 </span>
-                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
                   {project.matchScore}% match
                 </span>
               </div>
@@ -111,7 +111,7 @@ export function RightSidebar({
       {/* Suggested Buddies & Collaborators */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Users className="size-4 text-[var(--color-secondary)]" />
+          <Users className="size-4 text-white" />
           <h3 className="font-semibold text-sm text-white tracking-tight">
             Suggested Buddies
           </h3>
@@ -177,7 +177,7 @@ export function RightSidebar({
             <button
               key={t.tag}
               onClick={() => onSelectTag?.(t.tag)}
-              className="px-2.5 py-1 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] hover:border-indigo-500/50 hover:bg-indigo-500/10 text-xs font-mono text-[var(--text-secondary)] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] hover:border-white/40 hover:bg-white/10 text-xs font-mono text-[var(--text-secondary)] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>#{t.tag}</span>
               <span className="text-[10px] text-[var(--text-muted)]">· {t.posts}</span>

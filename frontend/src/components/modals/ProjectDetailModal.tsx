@@ -26,7 +26,7 @@ export function ProjectDetailModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogHeader onClose={() => onOpenChange(false)}>
         <div className="flex items-center gap-2">
-          <Sparkles className="size-5 text-indigo-400" />
+          <Sparkles className="size-5 text-white" />
           <span>Project Overview</span>
         </div>
       </DialogHeader>
@@ -35,7 +35,7 @@ export function ProjectDetailModal({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-white">{project.title}</h3>
-            <span className="text-xs font-mono text-[var(--color-secondary)]">
+            <span className="text-xs font-mono text-zinc-400">
               Match score: {project.matchScore}%
             </span>
           </div>
@@ -74,7 +74,6 @@ export function ProjectDetailModal({
               onOpenChange(false);
               onApply();
             }}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
           >
             Request to Join
           </Button>

@@ -61,9 +61,9 @@ export function DiscoverView({ onJoinClick, searchQuery }: DiscoverViewProps) {
           <button
             key={c.id}
             onClick={() => setSelectedCategory(c.id)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
               selectedCategory === c.id
-                ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20"
+                ? "bg-white text-black shadow-sm"
                 : "bg-[var(--bg-surface-container)] text-[var(--text-secondary)] hover:text-white border border-[var(--border-subtle)]"
             }`}
           >
@@ -82,7 +82,7 @@ export function DiscoverView({ onJoinClick, searchQuery }: DiscoverViewProps) {
             <div className="flex flex-col gap-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-base font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                  <h3 className="text-base font-semibold text-white group-hover:text-white transition-colors">
                     {proj.title}
                   </h3>
                   <span className="text-xs font-mono text-[var(--text-muted)]">
@@ -90,7 +90,7 @@ export function DiscoverView({ onJoinClick, searchQuery }: DiscoverViewProps) {
                   </span>
                 </div>
                 {proj.team && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-white/10 text-white border border-white/20 shrink-0">
                     {proj.team.current}/{proj.team.max} slots
                   </span>
                 )}
@@ -110,7 +110,7 @@ export function DiscoverView({ onJoinClick, searchQuery }: DiscoverViewProps) {
             </div>
 
             <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-              <div className="text-xs text-[var(--color-secondary)] truncate max-w-[200px]">
+              <div className="text-xs text-zinc-300 truncate max-w-[200px]">
                 <span className="text-[var(--text-muted)]">Needs: </span>
                 {proj.team?.lookingFor.join(", ")}
               </div>
@@ -118,7 +118,7 @@ export function DiscoverView({ onJoinClick, searchQuery }: DiscoverViewProps) {
               <Button
                 size="sm"
                 onClick={() => onJoinClick(proj)}
-                className="h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg gap-1"
+                className="h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg gap-1"
               >
                 <span>Join Team</span>
                 <ArrowUpRight className="size-3.5" />

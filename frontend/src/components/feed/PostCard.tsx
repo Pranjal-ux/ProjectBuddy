@@ -111,7 +111,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                 {post.author.name}
               </span>
               {post.author.verified && (
-                <span className="size-3.5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-bold">
+                <span className="size-3.5 rounded-full bg-white/10 text-white flex items-center justify-center text-[10px] font-bold">
                   ✓
                 </span>
               )}
@@ -155,7 +155,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                 <Badge
                   key={tag}
                   variant="tech"
-                  className="cursor-pointer hover:border-indigo-500/50 hover:text-indigo-300 transition-colors"
+                  className="cursor-pointer hover:border-white/50 hover:text-white transition-colors"
                   onClick={() => onTagClick?.(tag)}
                 >
                   {tag}
@@ -169,7 +169,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
             <div className="mt-2 p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center gap-1.5">
+                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20 flex items-center gap-1.5">
                     <Users className="size-3.5" />
                     Team: {post.team.current} / {post.team.max} members
                   </span>
@@ -180,7 +180,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                         className={cn(
                           "size-2 rounded-full",
                           i < post.team!.current
-                            ? "bg-indigo-500"
+                            ? "bg-white"
                             : "bg-[var(--border-strong)]"
                         )}
                       />
@@ -188,7 +188,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                   </div>
                 </div>
 
-                <div className="text-xs text-[var(--color-secondary)]">
+                <div className="text-xs text-zinc-300">
                   <span className="text-[var(--text-muted)]">Looking for: </span>
                   <span className="font-medium">
                     {post.team.lookingFor.join(" · ")}
@@ -199,7 +199,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
               <Button
                 size="sm"
                 onClick={() => onRequestJoin?.(post)}
-                className="h-8 px-3.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shrink-0 gap-1.5"
+                className="h-8 px-3.5 text-xs font-medium bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg shrink-0 gap-1.5"
               >
                 <span>Request to Join</span>
               </Button>
@@ -239,7 +239,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                   </button>
                 </div>
               </div>
-              <pre className="p-3.5 text-[12px] leading-relaxed text-indigo-200 overflow-x-auto">
+              <pre className="p-3.5 text-[12px] leading-relaxed text-zinc-200 overflow-x-auto">
                 <code>{post.codeSnippet.code}</code>
               </pre>
             </div>
@@ -273,7 +273,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
             {/* Comments Toggle */}
             <button
               onClick={() => setShowComments(!showComments)}
-              className="flex items-center gap-1.5 hover:text-[var(--color-secondary)] transition-colors group cursor-pointer"
+              className="flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer"
             >
               <MessageSquare className="size-4 group-hover:scale-110 transition-transform" />
               <span>{comments.length}</span>
@@ -372,13 +372,13 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write a reply or question about this project..."
-                  className="flex-1 h-8 px-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-indigo-500"
+                  className="flex-1 h-8 px-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white"
                 />
                 <Button
                   type="submit"
                   size="sm"
                   disabled={!newComment.trim()}
-                  className="h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white gap-1"
+                  className="h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold gap-1"
                 >
                   <span>Reply</span>
                   <Send className="size-3" />

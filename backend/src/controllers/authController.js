@@ -541,6 +541,126 @@ export const getMe = async (req, res) => {
 };
 
 /**
+ * @desc Update authenticated user profile (avatar photo, bio, role, name, skills, githubUrl, etc.)
+ * @route PUT /api/auth/profile
+ */
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const { avatar, name, role, bio, githubUrl, skills, initials } = req.body;
+
+    if (isDbReady()) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in database",
+        });
+      }
+
+      if (avatar !== undefined) user.avatar = avatar;
+      if (name !== undefined && name.trim()) user.name = name.trim();
+      if (role !== undefined && role.trim()) user.role = role.trim();
+      if (bio !== undefined) user.bio = bio.trim();
+      if (githubUrl !== undefined) user.githubUrl = githubUrl.trim();
+      if (skills !== undefined && Array.isArray(skills)) user.skills = skills;
+      if (initials !== undefined && initials.trim()) {
+        user.initials = initials.trim().toUpperCase();
+      } else if (name) {
+        user.initials = getInitials(name);
+      }
+
+      const updatedUser = await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile updated successfully!",
+        user: {
+          id: updatedUser._id.toString(),
+          _id: updatedUser._id.toString(),
+          name: updatedUser.name,
+          handle: updatedUser.handle,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          bio: updatedUser.bio,
+          avatar: updatedUser.avatar,
+          initials: updatedUser.initials,
+          githubUrl: updatedUser.githubUrl,
+          skills: updatedUser.skills,
+          authProvider: updatedUser.authProvider,
+          createdAt: updatedUser.createdAt,
+        },
+      });
+    } else {
+      // In-memory fallback
+      let user = inMemoryUsers.find(
+        (u) =>
+          (u.id && u.id === userId) ||
+          (u._id && u._id === userId) ||
+          (u.email && req.user && u.email === req.user.email) ||
+          (u.handle && req.user && u.handle === req.user.handle)
+      );
+
+      if (!user) {
+        const mockId = userId || `usr-${Date.now()}`;
+        user = {
+          _id: mockId,
+          id: mockId,
+          name: req.user?.name || "Developer",
+          handle: req.user?.handle || "@developer",
+          email: req.user?.email || "developer@projectbuddy.dev",
+          role: req.user?.role || "Fullstack Engineer",
+          bio: req.user?.bio || "",
+          initials: req.user?.initials || "DEV",
+          skills: ["React", "TypeScript", "Node.js"],
+          avatar: "",
+        };
+        inMemoryUsers.push(user);
+      }
+
+      if (avatar !== undefined) user.avatar = avatar;
+      if (name !== undefined && name.trim()) user.name = name.trim();
+      if (role !== undefined && role.trim()) user.role = role.trim();
+      if (bio !== undefined) user.bio = bio.trim();
+      if (githubUrl !== undefined) user.githubUrl = githubUrl.trim();
+      if (skills !== undefined && Array.isArray(skills)) user.skills = skills;
+      if (initials !== undefined && initials.trim()) {
+        user.initials = initials.trim().toUpperCase();
+      } else if (name) {
+        user.initials = getInitials(name);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile updated successfully (In-Memory Fallback)!",
+        user: {
+          id: user.id || user._id,
+          _id: user.id || user._id,
+          name: user.name,
+          handle: user.handle,
+          email: user.email,
+          role: user.role,
+          bio: user.bio,
+          avatar: user.avatar,
+          initials: user.initials,
+          githubUrl: user.githubUrl,
+          skills: user.skills,
+          authProvider: user.authProvider || "local",
+          createdAt: user.createdAt,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * @desc Sign in or Sign up with Google OAuth (OpenID Connect / OAuth 2.0)
  * @route POST /api/auth/google
  */

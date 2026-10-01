@@ -75,7 +75,7 @@ export function CreateProjectModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogHeader onClose={() => onOpenChange(false)}>
         <div className="flex items-center gap-2">
-          <Sparkles className="size-5 text-indigo-400" />
+          <Sparkles className="size-5 text-white" />
           <span>Publish New Project</span>
         </div>
       </DialogHeader>
@@ -153,7 +153,6 @@ export function CreateProjectModal({
           </Button>
           <Button
             type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
           >
             Publish Project
           </Button>

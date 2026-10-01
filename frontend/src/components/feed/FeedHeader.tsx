@@ -35,7 +35,7 @@ export function FeedHeader({
           <h1 className="font-bold text-base sm:text-xl text-white tracking-tight">
             {theme === "oled" ? "OLED Feed" : "Home Feed"}
           </h1>
-          <span className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-mono bg-white/10 text-white border border-white/20">
             Live Stream
           </span>
         </div>
@@ -50,13 +50,13 @@ export function FeedHeader({
           >
             {theme === "oled" ? (
               <>
-                <Sun className="size-3.5 text-amber-400" />
+                <Sun className="size-3.5 text-zinc-300" />
                 <span className="hidden sm:inline">OLED: ON</span>
               </>
             ) : (
               <>
-                <Moon className="size-3.5 text-indigo-400" />
-                <span className="hidden sm:inline">Theme: Charcoal</span>
+                <Moon className="size-3.5 text-zinc-300" />
+                <span className="hidden sm:inline">Theme: Dark</span>
               </>
             )}
           </button>
@@ -65,7 +65,7 @@ export function FeedHeader({
           <Button
             size="sm"
             onClick={openCreateModal}
-            className="hidden sm:flex h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+            className="hidden sm:flex h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold"
           >
             <span>+ New Project</span>
           </Button>
@@ -95,7 +95,7 @@ export function FeedHeader({
               {Icon && <Icon className="size-3 sm:size-4 text-[var(--text-muted)]" />}
               <span>{tab.label}</span>
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full" />
               )}
             </button>
           );

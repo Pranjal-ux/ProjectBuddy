@@ -115,12 +115,12 @@ function HomeContent() {
             >
               {theme === "oled" ? (
                 <>
-                  <Sun className="size-3.5 text-amber-400" />
+                  <Sun className="size-3.5 text-zinc-300" />
                   <span>OLED</span>
                 </>
               ) : (
                 <>
-                  <Moon className="size-3.5 text-indigo-400" />
+                  <Moon className="size-3.5 text-zinc-300" />
                   <span>Dark</span>
                 </>
               )}
@@ -149,7 +149,7 @@ function HomeContent() {
                   </p>
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="text-xs text-indigo-400 hover:underline"
+                    className="text-xs text-white hover:underline cursor-pointer"
                   >
                     Clear search filter
                   </button>
@@ -193,14 +193,14 @@ function HomeContent() {
                 <div>
                   <h4 className="text-sm font-semibold text-white">Visual Mode</h4>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Switch between Developer Indigo Charcoal and Pitch-Black OLED
+                    Switch between Monochrome Dark and Pitch-Black OLED
                   </p>
                 </div>
                 <button
                   onClick={toggleTheme}
                   className="px-3 py-1.5 rounded-lg bg-[var(--bg-surface-high)] text-xs font-mono text-white border border-[var(--border-strong)]"
                 >
-                  {theme === "oled" ? "OLED Black" : "Developer Dark"}
+                  {theme === "oled" ? "OLED Black" : "Dark"}
                 </button>
               </div>
 
@@ -214,7 +214,7 @@ function HomeContent() {
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="accent-indigo-600 size-4"
+                  className="accent-white size-4"
                 />
               </div>
             </div>

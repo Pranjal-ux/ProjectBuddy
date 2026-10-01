@@ -189,6 +189,29 @@ export const api = {
     return data.user;
   },
 
+  // Auth: Update user profile (photo, bio, skills, role, etc.)
+  async updateProfile(
+    payload: Partial<User>,
+    token?: string
+  ): Promise<{ success: boolean; message: string; user: User }> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to update profile");
+    }
+    return data;
+  },
+
   // Fetch activities feed
   async getActivities(recipientHandle?: string): Promise<ActivityItem[]> {
     try {

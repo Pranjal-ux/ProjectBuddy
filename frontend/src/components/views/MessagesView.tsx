@@ -197,7 +197,7 @@ export function MessagesView() {
             <h2 className="font-bold text-white text-base tracking-tight">
               Direct Messages
             </h2>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
               {contacts.length} Active
             </span>
           </div>
@@ -210,7 +210,7 @@ export function MessagesView() {
               value={searchContact}
               onChange={(e) => setSearchContact(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full h-8 pl-8 pr-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-indigo-500"
+              className="w-full h-8 pl-8 pr-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white"
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ export function MessagesView() {
                   onClick={() => handleSelectContact(contact.id)}
                   className={`w-full p-3.5 sm:p-4 flex gap-3 text-left transition-colors cursor-pointer ${
                     isSelected
-                      ? "bg-[var(--bg-surface-high)] border-l-2 border-indigo-500"
+                      ? "bg-[var(--bg-surface-high)] border-l-2 border-white"
                       : "hover:bg-[var(--bg-surface-container)]"
                   }`}
                 >
@@ -253,7 +253,7 @@ export function MessagesView() {
                         {contact.time}
                       </span>
                     </div>
-                    <span className="text-[11px] text-indigo-400 block truncate font-mono">
+                    <span className="text-[11px] text-zinc-400 block truncate font-mono">
                       {contact.project}
                     </span>
                     <p className="text-xs text-[var(--text-secondary)] truncate mt-1">
@@ -336,7 +336,7 @@ export function MessagesView() {
           {currentContact && (
             <div className="my-2 p-3 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex items-center justify-between gap-3 max-w-lg self-center w-full">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
+                <div className="p-2 rounded-lg bg-white/10 text-white shrink-0">
                   <Sparkles className="size-4" />
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -371,7 +371,7 @@ export function MessagesView() {
                 <div
                   className={`p-3 rounded-2xl text-xs leading-relaxed break-words ${
                     msg.sender === "me"
-                      ? "bg-indigo-600 text-white rounded-br-none shadow-sm shadow-indigo-600/20"
+                      ? "bg-white text-black font-medium rounded-br-none shadow-sm"
                       : "bg-[var(--bg-surface-container)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-bl-none"
                   }`}
                 >
@@ -382,7 +382,7 @@ export function MessagesView() {
                     {msg.time}
                   </span>
                   {msg.sender === "me" && (
-                    <CheckCheck className="size-3 text-indigo-400" />
+                    <CheckCheck className="size-3 text-zinc-400" />
                   )}
                 </div>
               </div>
@@ -401,12 +401,12 @@ export function MessagesView() {
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             placeholder="Type a message or code snippet..."
-            className="flex-1 h-10 px-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-indigo-500 transition-colors"
+            className="flex-1 h-10 px-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white transition-colors"
           />
           <Button
             type="submit"
             disabled={!messageInput.trim()}
-            className="h-10 px-3.5 sm:px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl gap-1.5 shrink-0"
+            className="h-10 px-3.5 sm:px-4 bg-white hover:bg-neutral-200 text-black font-semibold disabled:opacity-40 rounded-xl gap-1.5 shrink-0"
           >
             <span className="hidden sm:inline text-xs">Send</span>
             <Send className="size-3.5" />

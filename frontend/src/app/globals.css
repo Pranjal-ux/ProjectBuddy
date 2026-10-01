@@ -3,51 +3,51 @@
 @layer base {
   :root,
   [data-theme="charcoal"] {
-    --bg-canvas: #13131b;
-    --bg-surface: #13131b;
-    --bg-surface-lowest: #0d0d15;
-    --bg-surface-low: #1b1b23;
-    --bg-surface-container: #1f1f27;
-    --bg-surface-high: #292932;
-    --bg-surface-highest: #34343d;
-    --border-subtle: #262633;
-    --border-strong: #34343d;
-    --border-focus: #6366f1;
-    --color-primary: #6366f1;
-    --color-primary-light: #c0c1ff;
-    --color-primary-container: #4f46e5;
-    --color-secondary: #38bdf8;
-    --color-secondary-light: #7bd0ff;
-    --color-tertiary: #ffb783;
-    --text-primary: #f3f4f6;
-    --text-secondary: #9ca3af;
-    --text-muted: #6b7280;
-    --badge-bg: #292932;
-    --badge-text: #c0c1ff;
+    --bg-canvas: #09090b;
+    --bg-surface: #09090b;
+    --bg-surface-lowest: #000000;
+    --bg-surface-low: #121215;
+    --bg-surface-container: #18181b;
+    --bg-surface-high: #27272a;
+    --bg-surface-highest: #3f3f46;
+    --border-subtle: #27272a;
+    --border-strong: #3f3f46;
+    --border-focus: #ffffff;
+    --color-primary: #ffffff;
+    --color-primary-light: #f4f4f5;
+    --color-primary-container: #27272a;
+    --color-secondary: #e4e4e7;
+    --color-secondary-light: #f4f4f5;
+    --color-tertiary: #a1a1aa;
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --badge-bg: #27272a;
+    --badge-text: #ffffff;
   }
 
   [data-theme="oled"] {
     --bg-canvas: #000000;
     --bg-surface: #000000;
     --bg-surface-lowest: #000000;
-    --bg-surface-low: #050505;
-    --bg-surface-container: #0a0a0a;
-    --bg-surface-high: #121212;
-    --bg-surface-highest: #171717;
-    --border-subtle: #171717;
-    --border-strong: #222222;
-    --border-focus: #6366f1;
+    --bg-surface-low: #080808;
+    --bg-surface-container: #0f0f0f;
+    --bg-surface-high: #171717;
+    --bg-surface-highest: #262626;
+    --border-subtle: #1c1c1c;
+    --border-strong: #2e2e2e;
+    --border-focus: #ffffff;
     --color-primary: #ffffff;
     --color-primary-light: #ffffff;
-    --color-primary-container: #222222;
-    --color-secondary: #7bd0ff;
-    --color-secondary-light: #38bdf8;
-    --color-tertiary: #ffb783;
+    --color-primary-container: #1f1f1f;
+    --color-secondary: #e4e4e7;
+    --color-secondary-light: #f4f4f5;
+    --color-tertiary: #a1a1aa;
     --text-primary: #ffffff;
     --text-secondary: #a1a1aa;
-    --text-muted: #52525b;
-    --badge-bg: #121212;
-    --badge-text: #e4e4e7;
+    --text-muted: #71717a;
+    --badge-bg: #171717;
+    --badge-text: #ffffff;
   }
 
   * {

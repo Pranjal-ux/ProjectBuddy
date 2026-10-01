@@ -78,7 +78,7 @@ export function JoinTeamModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogHeader onClose={() => onOpenChange(false)}>
         <div className="flex items-center gap-2">
-          <Users className="size-5 text-indigo-400" />
+          <Users className="size-5 text-white" />
           <span>Apply to Join Team</span>
         </div>
       </DialogHeader>
@@ -108,7 +108,7 @@ export function JoinTeamModal({
               {post.title || post.content.slice(0, 45)}
             </span>
             {post.team?.lookingFor && (
-              <span className="text-[var(--color-secondary)] block mt-1">
+              <span className="text-zinc-300 block mt-1">
                 Roles looking for: {post.team.lookingFor.join(", ")}
               </span>
             )}
@@ -163,11 +163,11 @@ export function JoinTeamModal({
             <Button
               type="submit"
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium flex items-center gap-1.5"
+              className="flex items-center gap-1.5"
             >
               {submitting ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin text-black" />
                   <span>Submitting...</span>
                 </>
               ) : (

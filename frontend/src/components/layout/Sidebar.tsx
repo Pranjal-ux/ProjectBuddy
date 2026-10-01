@@ -63,7 +63,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
               onClick={() => setActiveTab("home")}
               className="flex items-center gap-2.5 cursor-pointer"
             >
-              <div className="size-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 shrink-0">
+              <div className="size-9 rounded-xl bg-white flex items-center justify-center text-black shadow-md shrink-0">
                 <Layers className="size-5" />
               </div>
               {/* Brand text — hidden on tablet (sm/md), shown lg+ */}
@@ -71,7 +71,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
                 <span className="font-bold text-lg tracking-tight text-white leading-none">
                   ProjectBuddy
                 </span>
-                <span className="text-[11px] font-mono text-[var(--color-secondary)] tracking-wider mt-0.5">
+                <span className="text-[11px] font-mono text-[var(--text-muted)] tracking-wider mt-0.5">
                   DEV NETWORK
                 </span>
               </div>
@@ -96,7 +96,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
                     // Sizing: icon-centered on sm/md, full label on lg+
                     "justify-center lg:justify-between px-2 py-2.5 md:px-3 lg:px-3.5",
                     isActive
-                      ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 font-semibold"
+                      ? "bg-white/10 text-white border border-white/20 font-semibold"
                       : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-surface-high)]"
                   )}
                 >
@@ -106,13 +106,13 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
                         className={cn(
                           "size-5 transition-transform group-hover:scale-110",
                           isActive
-                            ? "text-indigo-400"
+                            ? "text-white"
                             : "text-[var(--text-muted)] group-hover:text-white"
                         )}
                       />
                       {/* Badge dot on icon for sm/md tablet */}
                       {item.badge && (
-                        <span className="lg:hidden absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-mono font-bold bg-indigo-500 text-white flex items-center justify-center">
+                        <span className="lg:hidden absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-mono font-bold bg-white text-black flex items-center justify-center">
                           {item.badge}
                         </span>
                       )}
@@ -121,7 +121,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
                   </div>
                   {/* Badge pill — shown only lg+ */}
                   {item.badge && (
-                    <span className="hidden lg:inline px-1.5 py-0.2 rounded-full text-[11px] font-mono font-bold bg-indigo-500 text-white">
+                    <span className="hidden lg:inline px-1.5 py-0.2 rounded-full text-[11px] font-mono font-bold bg-white text-black">
                       {item.badge}
                     </span>
                   )}
@@ -135,7 +135,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
             {/* Full button on lg+ */}
             <Button
               onClick={openCreateModal}
-              className="hidden lg:flex w-full gap-2 h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/20"
+              className="hidden lg:flex w-full gap-2 h-11 bg-white hover:bg-white text-black hover:text-black font-medium rounded-xl shadow-md"
             >
               <Plus className="size-4 stroke-[2.5]" />
               <span>Create Project</span>
@@ -144,7 +144,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
             <button
               onClick={openCreateModal}
               title="Create Project"
-              className="lg:hidden flex items-center justify-center w-full h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-md shadow-indigo-600/20"
+              className="lg:hidden flex items-center justify-center w-full h-10 rounded-xl bg-white hover:bg-white text-black shadow-md"
             >
               <Plus className="size-5 stroke-[2.5]" />
             </button>
@@ -157,7 +157,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
             <div className="p-1 lg:p-2 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex flex-col gap-1.5">
               <button
                 onClick={() => openAuthModal("login")}
-                className="w-full flex items-center justify-center lg:justify-start gap-2 py-2 px-2.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors cursor-pointer shadow-sm shadow-indigo-600/20"
+                className="w-full flex items-center justify-center lg:justify-start gap-2 py-2 px-2.5 rounded-lg text-xs font-semibold text-black bg-white hover:bg-neutral-200 transition-colors cursor-pointer shadow-sm"
               >
                 <LogIn className="size-3.5" />
                 <span className="hidden lg:inline">Sign In / Register</span>
@@ -171,9 +171,10 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
               >
                 <div className="relative shrink-0">
                   <Avatar
+                    src={user?.avatar}
                     fallback={user?.initials || "DEV"}
                     size="sm"
-                    className="bg-indigo-700 text-white font-bold"
+                    className="bg-zinc-800 text-white font-bold border border-zinc-700"
                   />
                   <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface-container)]" />
                 </div>
@@ -202,7 +203,7 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
       <button
         onClick={openCreateModal}
         title="Create Project"
-        className="sm:hidden fixed bottom-18 right-4 z-40 size-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/40 flex items-center justify-center active:scale-95 transition-transform"
+        className="sm:hidden fixed bottom-18 right-4 z-40 size-12 rounded-full bg-white hover:bg-neutral-200 text-black shadow-xl flex items-center justify-center active:scale-95 transition-transform"
       >
         <Plus className="size-6 stroke-[2.5]" />
       </button>
@@ -219,19 +220,19 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
               className={cn(
                 "relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all cursor-pointer min-w-[56px]",
                 isActive
-                  ? "text-indigo-400 font-semibold"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  ? "text-white font-semibold"
+                  : "text-[var(--text-muted)] hover:text-white"
               )}
             >
               <div className="relative">
                 <Icon
                   className={cn(
                     "size-5 transition-transform",
-                    isActive ? "text-indigo-400 scale-105" : "text-[var(--text-muted)]"
+                    isActive ? "text-white scale-105" : "text-[var(--text-muted)]"
                   )}
                 />
                 {item.badge && (
-                  <span className="absolute -top-1 -right-2 size-3.5 rounded-full text-[9px] font-mono font-bold bg-indigo-500 text-white flex items-center justify-center">
+                  <span className="absolute -top-1 -right-2 size-3.5 rounded-full text-[9px] font-mono font-bold bg-white text-black flex items-center justify-center">
                     {item.badge}
                   </span>
                 )}

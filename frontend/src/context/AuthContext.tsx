@@ -25,6 +25,7 @@ interface AuthContextType {
     };
   }) => Promise<void>;
   logout: () => void;
+  updateUserProfile: (data: Partial<User>) => Promise<boolean>;
   openAuthModal: (initialMode?: "login" | "register") => void;
   closeAuthModal: () => void;
   authModalOpen: boolean;
@@ -146,6 +147,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("projectbuddy_user");
   };
 
+  const updateUserProfile = async (data: Partial<User>): Promise<boolean> => {
+    try {
+      const currentUser = user || defaultUser;
+      const updatedUser: User = {
+        ...currentUser,
+        ...data,
+      };
+
+      // Recalculate initials if name was changed and initials not explicitly passed
+      if (data.name && !data.initials) {
+        const parts = data.name.trim().split(" ");
+        updatedUser.initials =
+          parts.length >= 2
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : data.name.slice(0, 2).toUpperCase();
+      }
+
+      setUser(updatedUser);
+      localStorage.setItem("projectbuddy_user", JSON.stringify(updatedUser));
+
+      // Attempt backend update if token exists or server is available
+      try {
+        const res = await api.updateProfile(data, token || undefined);
+        if (res && res.user) {
+          setUser(res.user);
+          localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
+        }
+      } catch (err) {
+        console.warn("Backend profile sync notice:", err);
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      return false;
+    }
+  };
+
   const openAuthModal = (mode: "login" | "register" = "login") => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
@@ -170,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resendOtp,
         googleLogin,
         logout,
+        updateUserProfile,
         openAuthModal,
         closeAuthModal,
         authModalOpen,

@@ -176,7 +176,7 @@ export function ActivityView() {
       case "join_request":
         return {
           icon: Users,
-          iconColor: "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20",
+          iconColor: "text-white bg-white/10 border border-white/20",
         };
       case "like":
         return {
@@ -196,7 +196,7 @@ export function ActivityView() {
       default:
         return {
           icon: Users,
-          iconColor: "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20",
+          iconColor: "text-white bg-white/10 border border-white/20",
         };
     }
   };
@@ -276,13 +276,13 @@ export function ActivityView() {
                     <span className="font-semibold text-white">{act.user}</span>{" "}
                     <span className="text-[var(--text-secondary)]">({act.handle})</span>{" "}
                     {act.action}{" "}
-                    <span className="font-medium text-indigo-400">
+                    <span className="font-medium text-white">
                       &quot;{act.target}&quot;
                     </span>
                   </p>
                   {act.role && (
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-mono text-[var(--color-secondary)]">
+                      <span className="text-[11px] font-mono text-zinc-400">
                         Role applied:
                       </span>
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--bg-surface-high)] text-white border border-[var(--border-subtle)]">
@@ -305,7 +305,7 @@ export function ActivityView() {
                         size="sm"
                         disabled={isBusy}
                         onClick={() => handleResponse(act, "accepted")}
-                        className="h-7 sm:h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1 shadow-sm"
+                        className="h-7 sm:h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold flex items-center gap-1 shadow-sm"
                       >
                         <Check className="size-3.5" />
                         <span>Accept</span>

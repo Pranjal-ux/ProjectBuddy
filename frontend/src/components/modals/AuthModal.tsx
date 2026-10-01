@@ -516,11 +516,11 @@ export function AuthModal() {
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             {otpStep ? (
-              <ShieldCheck className="size-5 text-indigo-400" />
+              <ShieldCheck className="size-5 text-white" />
             ) : mode === "register" ? (
-              <UserPlus className="size-5 text-indigo-400" />
+              <UserPlus className="size-5 text-white" />
             ) : (
-              <LogIn className="size-5 text-indigo-400" />
+              <LogIn className="size-5 text-white" />
             )}
             <span>
               {otpStep
@@ -551,7 +551,7 @@ export function AuthModal() {
             }}
             className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
               mode === "login"
-                ? "border-indigo-500 text-white"
+                ? "border-white text-white font-semibold"
                 : "border-transparent text-[var(--text-secondary)] hover:text-white"
             }`}
           >
@@ -568,7 +568,7 @@ export function AuthModal() {
             }}
             className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
               mode === "register"
-                ? "border-indigo-500 text-white"
+                ? "border-white text-white font-semibold"
                 : "border-transparent text-[var(--text-secondary)] hover:text-white"
             }`}
           >
@@ -596,12 +596,12 @@ export function AuthModal() {
           </button>
 
           <div className="text-center py-2">
-            <div className="inline-flex p-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 mb-2">
-              <Mail className="size-7 text-indigo-400" />
+            <div className="inline-flex p-3 rounded-2xl bg-white/10 border border-white/20 text-white mb-2">
+              <Mail className="size-7 text-white" />
             </div>
             <h3 className="text-base font-semibold text-white">Check your Inbox</h3>
             <p className="text-xs text-[var(--text-secondary)] max-w-xs mx-auto mt-1 leading-relaxed">
-              We sent a 6-digit verification code to <span className="text-indigo-300 font-mono font-medium">{otpPendingEmail}</span>. Enter it below to activate your account.
+              We sent a 6-digit verification code to <span className="text-white font-mono font-medium">{otpPendingEmail}</span>. Enter it below to activate your account.
             </p>
           </div>
 
@@ -631,14 +631,14 @@ export function AuthModal() {
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="------"
-                className="w-52 text-center text-2xl font-mono font-bold tracking-[8px] h-12 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 transition-all placeholder:text-[var(--text-muted)]"
+                className="w-52 text-center text-2xl font-mono font-bold tracking-[8px] h-12 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-white focus:ring-2 focus:ring-white/20 transition-all placeholder:text-[var(--text-muted)]"
               />
             </div>
 
             <Button
               type="submit"
               disabled={verifyingOtp || otpCode.length < 6}
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full h-11 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {verifyingOtp ? (
                 <>
@@ -659,7 +659,7 @@ export function AuthModal() {
                 type="button"
                 disabled={resendCooldown > 0 || resendingOtp}
                 onClick={handleResendOtp}
-                className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-white hover:underline font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resendingOtp ? (
                   <Loader2 className="size-3 animate-spin" />
@@ -727,7 +727,7 @@ export function AuthModal() {
                 type="button"
                 disabled={googleLoading}
                 onClick={() => handleSelectDevAccount(acc)}
-                className="w-full p-3 rounded-xl bg-[var(--bg-surface-container)] hover:bg-[var(--bg-surface-high)] border border-[var(--border-subtle)] hover:border-indigo-500/40 transition-all flex items-center justify-between text-left group cursor-pointer disabled:opacity-50"
+                className="w-full p-3 rounded-xl bg-[var(--bg-surface-container)] hover:bg-[var(--bg-surface-high)] border border-[var(--border-subtle)] hover:border-white/40 transition-all flex items-center justify-between text-left group cursor-pointer disabled:opacity-50"
               >
                 <div className="flex items-center gap-3">
                   <img
@@ -736,7 +736,7 @@ export function AuthModal() {
                     className="size-9 rounded-full object-cover border border-white/10"
                   />
                   <div>
-                    <div className="text-xs font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                    <div className="text-xs font-semibold text-white group-hover:text-white transition-colors">
                       {acc.name}
                     </div>
                     <div className="text-[11px] text-[var(--text-muted)] font-mono">
@@ -745,7 +745,7 @@ export function AuthModal() {
                   </div>
                 </div>
                 {googleLoading ? (
-                  <Loader2 className="size-4 animate-spin text-indigo-400" />
+                  <Loader2 className="size-4 animate-spin text-white" />
                 ) : (
                   <ChevronRight className="size-4 text-[var(--text-muted)] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                 )}
@@ -789,9 +789,9 @@ export function AuthModal() {
                         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(customEmail)}`,
                       })
                     }
-                    className="flex-1 h-8 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg"
+                    className="flex-1 h-8 text-xs bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg"
                   >
-                    {googleLoading ? <Loader2 className="size-3 animate-spin" /> : "Continue with this account"}
+                    {googleLoading ? <Loader2 className="size-3 animate-spin text-black" /> : "Continue with this account"}
                   </Button>
                   <Button
                     type="button"
@@ -806,8 +806,8 @@ export function AuthModal() {
             )}
           </div>
 
-          <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300 leading-relaxed">
-            <span className="font-semibold text-white">💡 Live Google Cloud OAuth Ready:</span> Once you obtain credentials from Google Cloud Console, add <code className="bg-indigo-950/60 text-indigo-200 px-1 py-0.5 rounded font-mono text-[10px]">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to <code className="bg-indigo-950/60 text-indigo-200 px-1 py-0.5 rounded font-mono text-[10px]">frontend/.env.local</code> to seamlessly switch to Google&apos;s official live popup dialog.
+          <div className="p-3 rounded-xl bg-white/5 border border-white/15 text-[11px] text-zinc-300 leading-relaxed">
+            <span className="font-semibold text-white">💡 Live Google Cloud OAuth Ready:</span> Once you obtain credentials from Google Cloud Console, add <code className="bg-zinc-800 text-zinc-200 px-1 py-0.5 rounded font-mono text-[10px]">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to <code className="bg-zinc-800 text-zinc-200 px-1 py-0.5 rounded font-mono text-[10px]">frontend/.env.local</code> to seamlessly switch to Google&apos;s official live popup dialog.
           </div>
         </div>
       ) : (
@@ -832,7 +832,7 @@ export function AuthModal() {
             <>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-mono text-[var(--text-secondary)]">
-                  Full Name <span className="text-indigo-400">*</span>
+                  Full Name <span className="text-white">*</span>
                 </label>
                 <Input
                   placeholder="e.g. Alex Rivers"
@@ -845,7 +845,7 @@ export function AuthModal() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-mono text-[var(--text-secondary)]">
-                  Username / Handle <span className="text-indigo-400">*</span>
+                  Username / Handle <span className="text-white">*</span>
                 </label>
                 <Input
                   placeholder="e.g. @arivers"
@@ -873,7 +873,7 @@ export function AuthModal() {
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-mono text-[var(--text-secondary)]">
               {mode === "register" ? "Email Address" : "Email or Handle"}{" "}
-              <span className="text-indigo-400">*</span>
+              <span className="text-white">*</span>
             </label>
             <Input
               type={mode === "register" ? "email" : "text"}
@@ -891,7 +891,7 @@ export function AuthModal() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-mono text-[var(--text-secondary)]">
-              Password <span className="text-indigo-400">*</span>
+              Password <span className="text-white">*</span>
             </label>
             <Input
               type="password"
@@ -921,11 +921,11 @@ export function AuthModal() {
             <Button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full h-11 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin text-black" />
                   <span>
                     {mode === "register"
                       ? "Creating Account..."
@@ -963,11 +963,11 @@ export function AuthModal() {
           disabled={loading || googleLoading}
           onClick={handleGoogleAuthClick}
           aria-label="Continue with Google"
-          className="w-full h-11 px-4 rounded-xl bg-[var(--bg-surface-container)] hover:bg-[var(--bg-surface-high)] active:bg-[var(--bg-surface-highest)] text-white border border-[var(--border-subtle)] hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 flex items-center justify-center gap-3 text-xs sm:text-sm font-medium shadow-sm transition-all cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed select-none"
+          className="w-full h-11 px-4 rounded-xl bg-[var(--bg-surface-container)] hover:bg-[var(--bg-surface-high)] active:bg-[var(--bg-surface-highest)] text-white border border-[var(--border-subtle)] hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white flex items-center justify-center gap-3 text-xs sm:text-sm font-medium shadow-sm transition-all cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed select-none"
         >
           {googleLoading ? (
             <>
-              <Loader2 className="size-4 animate-spin text-indigo-400" />
+              <Loader2 className="size-4 animate-spin text-white" />
               <span>Connecting to Google...</span>
             </>
           ) : (
@@ -986,7 +986,7 @@ export function AuthModal() {
               <button
                 type="button"
                 onClick={() => setMode("login")}
-                className="text-indigo-400 hover:underline font-medium cursor-pointer"
+                className="text-white hover:underline font-medium cursor-pointer"
               >
                 Sign In
               </button>
@@ -997,7 +997,7 @@ export function AuthModal() {
               <button
                 type="button"
                 onClick={() => setMode("register")}
-                className="text-indigo-400 hover:underline font-medium cursor-pointer"
+                className="text-white hover:underline font-medium cursor-pointer"
               >
                 Create Account
               </button>

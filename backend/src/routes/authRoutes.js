@@ -5,6 +5,7 @@ import {
   resendRegistrationOtp,
   loginUser,
   getMe,
+  updateProfile,
   googleAuth,
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -20,5 +21,6 @@ router.get("/google/client-id", (req, res) => {
   res.json({ clientId: process.env.GOOGLE_CLIENT_ID || "" });
 });
 router.get("/me", protect, getMe);
+router.put("/profile", protect, updateProfile);
 
 export default router;
