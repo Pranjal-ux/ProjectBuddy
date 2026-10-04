@@ -40,6 +40,22 @@ npm start
 
 ## 📡 API Endpoints
 
+### Profile Section (`/api/profile`)
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/profile/me` | Bearer Token | Get authenticated user's profile with computed stats |
+| `PUT` | `/api/profile/me` | Bearer Token | Update profile (role, bio, location, socials, customStatus, skills, availability) |
+| `POST` | `/api/profile/me/avatar` | Bearer Token | Update or upload profile avatar image |
+| `DELETE` | `/api/profile/me/avatar` | Bearer Token | Remove custom avatar (revert to initials) |
+| `POST` | `/api/profile/me/cover` | Bearer Token | Update cover banner image |
+| `DELETE` | `/api/profile/me/cover` | Bearer Token | Remove cover banner |
+| `PUT` | `/api/profile/me/skills` | Bearer Token | Update, add, or remove verified developer skills |
+| `GET` | `/api/profile/search` | Public | Search developers by skill, role, availability, or keyword |
+| `GET` | `/api/profile/:identifier` | Public | View public profile by `@handle` or user ID |
+| `GET` | `/api/profile/:identifier/projects` | Public | Get authored or joined projects |
+| `GET` | `/api/profile/:identifier/activities` | Public | Get developer activity & contribution history |
+| `GET` | `/api/profile/:identifier/stats` | Public | Get live synergy match score & profile stats |
+
 ### Join Requests (`/api/join-requests`)
 | Method | Endpoint | Description |
 |---|---|---|
@@ -57,3 +73,4 @@ npm start
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health check & MongoDB connection status |
+

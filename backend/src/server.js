@@ -5,6 +5,8 @@ import { connectDB, getDbStatus } from "./config/db.js";
 import joinRequestRoutes from "./routes/joinRequestRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import postRoutes from "./routes/postRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -57,6 +59,8 @@ app.get("/api/health", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/posts", postRoutes);
 app.use("/api/join-requests", joinRequestRoutes);
 app.use("/api/activities", activityRoutes);
 
@@ -87,6 +91,8 @@ const startServer = async () => {
     console.log(`\n======================================================`);
     console.log(`🚀 ProjectBuddy Backend running at: http://localhost:${PORT}`);
     console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`👤 Profile API: http://localhost:${PORT}/api/profile`);
+    console.log(`📝 Posts API: http://localhost:${PORT}/api/posts`);
     console.log(`📋 Join Requests API: http://localhost:${PORT}/api/join-requests`);
     console.log(`⚡ Activities API: http://localhost:${PORT}/api/activities`);
     console.log(`======================================================\n`);

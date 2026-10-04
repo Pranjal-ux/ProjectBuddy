@@ -7,7 +7,6 @@ import {
   Smile,
   Users,
   Send,
-  Sparkles,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Post } from "@/data/mockData";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 
 interface PostComposerProps {
   onPublish: (newPost: Post) => void;
@@ -83,6 +83,9 @@ export function PostComposer({ onPublish }: PostComposerProps) {
     };
 
     onPublish(newPost);
+    api.createPost(newPost).catch((err) => {
+      console.warn("Failed to persist post to server:", err);
+    });
 
     // Reset form
     setContent("");

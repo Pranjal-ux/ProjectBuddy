@@ -34,6 +34,7 @@ export interface Post {
     comments: number;
     reposts: number;
     bookmarks: number;
+    shares?: number;
   };
   userLiked?: boolean;
   userBookmarked?: boolean;
@@ -43,6 +44,7 @@ export interface Post {
     handle: string;
     text: string;
     time: string;
+    avatar?: string;
   }>;
 }
 

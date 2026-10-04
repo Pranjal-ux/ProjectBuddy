@@ -17,10 +17,12 @@ import { BookmarksView } from "@/components/views/BookmarksView";
 import { initialPosts, suggestedProjects, Post } from "@/data/mockData";
 import { Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AuthModal } from "@/components/modals/AuthModal";
+import { api } from "@/lib/api";
 
 function HomeContent() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
   const [feedFilter, setFeedFilter] = useState<
     "for-you" | "following" | "open-teams" | "showcases"
@@ -28,6 +30,29 @@ function HomeContent() {
   const [theme, setTheme] = useState<"charcoal" | "oled">("charcoal");
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingPosts, setLoadingPosts] = useState(false);
+
+  // Fetch real-time posts from backend API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFeedPosts = async () => {
+      try {
+        setLoadingPosts(true);
+        const data = await api.getPosts(user?.handle);
+        if (isMounted && data && data.length > 0) {
+          setPosts(data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch posts from API, using fallback:", err);
+      } finally {
+        if (isMounted) setLoadingPosts(false);
+      }
+    };
+    fetchFeedPosts();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.handle]);
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -51,6 +76,12 @@ function HomeContent() {
 
   const handlePublishPost = (newPost: Post) => {
     setPosts((prev) => [newPost, ...prev]);
+  };
+
+  const handlePostUpdate = (updatedPost: Post) => {
+    setPosts((prev) =>
+      prev.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+    );
   };
 
   const handleRequestJoin = (post: Post) => {
@@ -161,6 +192,7 @@ function HomeContent() {
                     post={post}
                     onRequestJoin={handleRequestJoin}
                     onTagClick={(tag) => setSearchQuery(tag)}
+                    onPostUpdate={handlePostUpdate}
                   />
                 ))
               )}
@@ -182,7 +214,11 @@ function HomeContent() {
         {activeTab === "profile" && <ProfileView />}
 
         {activeTab === "bookmarks" && (
-          <BookmarksView onRequestJoin={handleRequestJoin} />
+          <BookmarksView
+            posts={posts}
+            onRequestJoin={handleRequestJoin}
+            onPostUpdate={handlePostUpdate}
+          />
         )}
 
         {activeTab === "settings" && (

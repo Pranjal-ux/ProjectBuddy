@@ -1,65 +1,142 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Heart,
   MessageSquare,
   Repeat2,
   Bookmark,
   Share2,
-  MoreHorizontal,
   Users,
   Copy,
   Check,
   Send,
-  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Post } from "@/data/mockData";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 
 interface PostCardProps {
   post: Post;
   onRequestJoin?: (post: Post) => void;
   onTagClick?: (tag: string) => void;
+  onBookmarkToggle?: (postId: string, bookmarked: boolean) => void;
+  onPostUpdate?: (updatedPost: Post) => void;
 }
 
-export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
+export function PostCard({
+  post,
+  onRequestJoin,
+  onTagClick,
+  onBookmarkToggle,
+  onPostUpdate,
+}: PostCardProps) {
+  const { user } = useAuth();
   const [liked, setLiked] = useState(post.userLiked || false);
-  const [likesCount, setLikesCount] = useState(post.stats.likes);
+  const [likesCount, setLikesCount] = useState(post.stats.likes || 0);
   const [bookmarked, setBookmarked] = useState(post.userBookmarked || false);
+  const [bookmarksCount, setBookmarksCount] = useState(post.stats.bookmarks || 0);
+  const [sharesCount, setSharesCount] = useState(post.stats.shares || 0);
   const [reposted, setReposted] = useState(false);
-  const [repostsCount, setRepostsCount] = useState(post.stats.reposts);
+  const [repostsCount, setRepostsCount] = useState(post.stats.reposts || 0);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(post.commentsList || []);
   const [newComment, setNewComment] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const toggleLike = () => {
-    if (liked) {
-      setLiked(false);
-      setLikesCount((prev) => prev - 1);
-    } else {
-      setLiked(true);
-      setLikesCount((prev) => prev + 1);
+  // Sync state if post prop changes
+  useEffect(() => {
+    setLiked(post.userLiked || false);
+    setLikesCount(post.stats.likes || 0);
+    setBookmarked(post.userBookmarked || false);
+    setBookmarksCount(post.stats.bookmarks || 0);
+    setSharesCount(post.stats.shares || 0);
+    setComments(post.commentsList || []);
+  }, [post]);
+
+  const toggleLike = async () => {
+    const nextLiked = !liked;
+    const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+    setLiked(nextLiked);
+    setLikesCount(nextCount);
+
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        userLiked: nextLiked,
+        stats: {
+          ...post.stats,
+          likes: nextCount,
+        },
+      });
+    }
+
+    try {
+      const res = await api.toggleLike(post.id, user?.handle, user?.name);
+      if (res.success) {
+        setLiked(res.liked);
+        setLikesCount(res.likesCount);
+        if (onPostUpdate && res.post) {
+          onPostUpdate(res.post);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to toggle like on backend:", err);
     }
   };
 
   const toggleRepost = () => {
     if (reposted) {
       setReposted(false);
-      setRepostsCount((prev) => prev - 1);
+      setRepostsCount((prev) => Math.max(0, prev - 1));
     } else {
       setReposted(true);
       setRepostsCount((prev) => prev + 1);
     }
   };
 
-  const toggleBookmark = () => {
-    setBookmarked(!bookmarked);
+  const toggleBookmark = async () => {
+    const nextBookmarked = !bookmarked;
+    const nextCount = nextBookmarked
+      ? bookmarksCount + 1
+      : Math.max(0, bookmarksCount - 1);
+    setBookmarked(nextBookmarked);
+    setBookmarksCount(nextCount);
+
+    if (onBookmarkToggle) {
+      onBookmarkToggle(post.id, nextBookmarked);
+    }
+
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        userBookmarked: nextBookmarked,
+        stats: {
+          ...post.stats,
+          bookmarks: nextCount,
+        },
+      });
+    }
+
+    try {
+      const res = await api.toggleBookmark(post.id, user?.handle);
+      if (res.success) {
+        setBookmarked(res.bookmarked);
+        setBookmarksCount(res.bookmarksCount);
+        if (onPostUpdate && res.post) {
+          onPostUpdate(res.post);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to toggle bookmark on backend:", err);
+    }
   };
 
   const handleCopyCode = (code: string) => {
@@ -68,27 +145,65 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
     setTimeout(() => setCodeCopied(false), 2000);
   };
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const handleShare = async () => {
+    // Increment share counter on backend
+    setSharesCount((prev) => prev + 1);
+    api.recordShare(post.id).catch((e) => console.warn("Share count record failed:", e));
+
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2200);
+    }
+
+    // Native mobile share if supported and user clicks
+    if (navigator.share && /mobile|android|iphone/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: post.title || "ProjectBuddy Developer Project",
+          text: post.content,
+          url: shareUrl,
+        });
+      } catch {
+        // User dismissed native share sheet
+      }
+    }
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmittingComment) return;
 
-    setComments((prev) => [
-      ...prev,
-      {
-        id: `c-${Date.now()}`,
-        author: "Pranjal Shukla",
-        handle: "@pranjal",
-        text: newComment.trim(),
-        time: "Just now",
-      },
-    ]);
+    const commentText = newComment.trim();
+    const optimisticComment = {
+      id: `c-${Date.now()}`,
+      author: user?.name || "Developer",
+      handle: user?.handle || "@developer",
+      avatar: user?.avatar || "",
+      text: commentText,
+      time: "Just now",
+    };
+
+    setComments((prev) => [...prev, optimisticComment]);
     setNewComment("");
+    setIsSubmittingComment(true);
+
+    try {
+      const res = await api.addComment(post.id, commentText, {
+        name: user?.name,
+        handle: user?.handle,
+        avatar: user?.avatar,
+      });
+
+      if (res.success && res.commentsList) {
+        setComments(res.commentsList);
+      }
+    } catch (err) {
+      console.warn("Failed to add comment on backend:", err);
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   return (
@@ -127,13 +242,6 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                 </span>
               )}
             </div>
-
-            <button
-              className="text-[var(--text-muted)] hover:text-white p-1 rounded transition-colors"
-              title="More options"
-            >
-              <MoreHorizontal className="size-4" />
-            </button>
           </div>
 
           {/* Project Title (if any) */}
@@ -274,6 +382,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
             <button
               onClick={() => setShowComments(!showComments)}
               className="flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer"
+              title="View comments"
             >
               <MessageSquare className="size-4 group-hover:scale-110 transition-transform" />
               <span>{comments.length}</span>
@@ -283,9 +392,10 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
             <button
               onClick={toggleRepost}
               className={cn(
-                "flex items-center gap-1.5 hover:text-emerald-400 transition-colors group cursor-pointer",
-                reposted && "text-emerald-400 font-semibold"
+                "flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer",
+                reposted && "text-white font-semibold"
               )}
+              title="Repost"
             >
               <Repeat2 className="size-4 group-hover:scale-110 transition-transform" />
               <span>{repostsCount}</span>
@@ -298,6 +408,7 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                 "flex items-center gap-1.5 hover:text-rose-500 transition-colors group cursor-pointer",
                 liked && "text-rose-500 font-semibold"
               )}
+              title={liked ? "Unlike" : "Like"}
             >
               <Heart
                 className={cn(
@@ -308,13 +419,14 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
               <span>{likesCount}</span>
             </button>
 
-            {/* Bookmark */}
+            {/* Bookmark button */}
             <button
               onClick={toggleBookmark}
               className={cn(
                 "flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer",
                 bookmarked && "text-amber-400"
               )}
+              title={bookmarked ? "Remove bookmark" : "Save bookmark"}
             >
               <Bookmark
                 className={cn(
@@ -322,21 +434,23 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                   bookmarked && "fill-current"
                 )}
               />
+              <span>{bookmarksCount > 0 ? bookmarksCount : ""}</span>
             </button>
 
-            {/* Share */}
+            {/* Share button */}
             <button
               onClick={handleShare}
               className="flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer relative"
-              title="Share link"
+              title="Share project"
             >
               {copiedLink ? (
                 <Check className="size-4 text-emerald-400" />
               ) : (
                 <Share2 className="size-4 group-hover:scale-110 transition-transform" />
               )}
+              <span>{sharesCount > 0 ? sharesCount : ""}</span>
               {copiedLink && (
-                <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-neutral-900 text-white px-2 py-0.5 rounded shadow whitespace-nowrap">
+                <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-neutral-900 border border-[var(--border-subtle)] text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-30">
                   Link Copied!
                 </span>
               )}
@@ -346,24 +460,39 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
           {/* Inline Comments Thread */}
           {showComments && (
             <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] flex flex-col gap-3 animate-in fade-in duration-200">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-2.5 text-xs">
-                  <Avatar fallback={comment.author.slice(0, 2).toUpperCase()} size="sm" />
-                  <div className="flex-1 bg-[var(--bg-surface-container)] p-2.5 rounded-lg border border-[var(--border-subtle)]">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-white">
-                        {comment.author}
-                      </span>
-                      <span className="text-[10px] text-[var(--text-muted)]">
-                        {comment.time}
-                      </span>
+              {comments.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic py-1">
+                  No comments yet. Start the conversation!
+                </p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-2.5 text-xs">
+                    <Avatar
+                      src={comment.avatar}
+                      fallback={(comment.author || "U").slice(0, 2).toUpperCase()}
+                      size="sm"
+                    />
+                    <div className="flex-1 bg-[var(--bg-surface-container)] p-2.5 rounded-lg border border-[var(--border-subtle)]">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-white">
+                            {comment.author}
+                          </span>
+                          <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                            {comment.handle}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {comment.time}
+                        </span>
+                      </div>
+                      <p className="text-[var(--text-primary)] leading-normal">
+                        {comment.text}
+                      </p>
                     </div>
-                    <p className="text-[var(--text-primary)] leading-normal">
-                      {comment.text}
-                    </p>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
 
               {/* Add comment box */}
               <form onSubmit={handleAddComment} className="flex gap-2 mt-1">
@@ -371,17 +500,24 @@ export function PostCard({ post, onRequestJoin, onTagClick }: PostCardProps) {
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
+                  disabled={isSubmittingComment}
                   placeholder="Write a reply or question about this project..."
-                  className="flex-1 h-8 px-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white"
+                  className="flex-1 h-8 px-3 rounded-lg bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white disabled:opacity-50"
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={!newComment.trim()}
-                  className="h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold gap-1"
+                  disabled={!newComment.trim() || isSubmittingComment}
+                  className="h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold gap-1 disabled:opacity-50"
                 >
-                  <span>Reply</span>
-                  <Send className="size-3" />
+                  {isSubmittingComment ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Reply</span>
+                      <Send className="size-3" />
+                    </>
+                  )}
                 </Button>
               </form>
             </div>

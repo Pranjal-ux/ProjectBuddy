@@ -4,7 +4,6 @@ import React, { useState, useRef } from "react";
 import {
   X,
   Upload,
-  Link2,
   Sparkles,
   Trash2,
   Check,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface EditPhotoModalProps {
   isOpen: boolean;
@@ -77,9 +75,8 @@ export function EditPhotoModal({
   userName,
   onSavePhoto,
 }: EditPhotoModalProps) {
-  const [activeTab, setActiveTab] = useState<"upload" | "url" | "presets">("upload");
+  const [activeTab, setActiveTab] = useState<"upload" | "presets">("upload");
   const [previewPhoto, setPreviewPhoto] = useState<string>(currentPhoto);
-  const [urlInput, setUrlInput] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -142,21 +139,6 @@ export function EditPhotoModal({
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleApplyUrl = () => {
-    const trimmed = urlInput.trim();
-    if (!trimmed) {
-      setErrorMsg("Please enter an image URL.");
-      return;
-    }
-    try {
-      new URL(trimmed);
-      setPreviewPhoto(trimmed);
-      setErrorMsg(null);
-    } catch {
-      setErrorMsg("Please enter a valid HTTP or HTTPS image URL.");
-    }
   };
 
   const handleSelectPreset = (presetUrl: string) => {
@@ -260,21 +242,6 @@ export function EditPhotoModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("url");
-                setErrorMsg(null);
-              }}
-              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                activeTab === "url"
-                  ? "bg-white text-black shadow-sm"
-                  : "text-[var(--text-secondary)] hover:text-white"
-              }`}
-            >
-              <Link2 className="size-3.5" />
-              <span>Image URL</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 setActiveTab("presets");
                 setErrorMsg(null);
               }}
@@ -315,39 +282,6 @@ export function EditPhotoModal({
                   </p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Tab Content: URL */}
-          {activeTab === "url" && (
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-[var(--text-secondary)]">
-                Paste any publicly accessible image link (e.g., GitHub avatar, Unsplash, Gravatar).
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="text-xs bg-[var(--bg-surface-container)] text-white"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleApplyUrl();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  onClick={handleApplyUrl}
-                  className="shrink-0 text-xs bg-white hover:bg-neutral-200 text-black font-semibold"
-                >
-                  Preview
-                </Button>
-              </div>
-              <p className="text-[11px] font-mono text-[var(--text-muted)]">
-                Tip: For GitHub profile picture, use https://github.com/your-username.png
-              </p>
             </div>
           )}
 

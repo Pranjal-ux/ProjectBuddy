@@ -1,5 +1,15 @@
+import { Post } from "@/data/mockData";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+export interface ProfileStats {
+  activeProjectsCount?: number;
+  teamsJoinedCount?: number;
+  collaboratorsCount?: number;
+  matchScore?: number;
+  skillsCount?: number;
+}
 
 export interface User {
   id?: string;
@@ -10,9 +20,22 @@ export interface User {
   role?: string;
   bio?: string;
   avatar?: string;
+  coverImage?: string;
   initials?: string;
+  location?: string;
+  websiteUrl?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  pronouns?: string;
+  customStatus?: string;
+  availability?: "available" | "open_to_collab" | "busy" | "not_looking";
+  experienceLevel?: "junior" | "mid" | "senior" | "lead" | "architect";
+  interests?: string[];
   skills?: string[];
+  stats?: ProfileStats;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RegisterPayload {
@@ -68,6 +91,19 @@ export interface JoinRequestPayload {
   githubUrl?: string;
   pitch: string;
 }
+
+export const getAuthHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("projectbuddy_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+};
 
 export const api = {
   // Auth: Register new user (initiates email OTP verification)
@@ -175,8 +211,22 @@ export const api = {
     return "";
   },
 
-  // Auth: Get current authenticated user
+  // Auth / Profile: Get current authenticated user
   async getMe(token: string): Promise<User> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/profile/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.user;
+      }
+    } catch {
+      // Fallback to /auth/me
+    }
+
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -189,7 +239,7 @@ export const api = {
     return data.user;
   },
 
-  // Auth: Update user profile (photo, bio, skills, role, etc.)
+  // Auth / Profile: Update user profile (photo, bio, skills, role, social links, etc.)
   async updateProfile(
     payload: Partial<User>,
     token?: string
@@ -200,6 +250,23 @@ export const api = {
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
+
+    // Try /profile/me first
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/profile/me`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch {
+        // Fallback to /auth/profile
+      }
+    }
+
     const res = await fetch(`${API_BASE_URL}/auth/profile`, {
       method: "PUT",
       headers,
@@ -211,6 +278,63 @@ export const api = {
     }
     return data;
   },
+
+  // Profile: Get public profile by handle (@username) or ID
+  async getUserProfile(identifier: string): Promise<User> {
+    const res = await fetch(
+      `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}`,
+      { cache: "no-store" }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch user profile");
+    }
+    return data.user;
+  },
+
+  // Profile: Get user stats
+  async getUserStats(identifier: string): Promise<ProfileStats> {
+    const res = await fetch(
+      `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/stats`,
+      { cache: "no-store" }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch profile stats");
+    }
+    return data.stats || {};
+  },
+
+  // Profile: Get user authored/joined projects
+  async getUserProjects(identifier: string): Promise<any[]> {
+    const res = await fetch(
+      `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/projects`,
+      { cache: "no-store" }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch user projects");
+    }
+    return data.projects || [];
+  },
+
+  // Profile: Search developers
+  async searchDevelopers(params?: { q?: string; skill?: string; role?: string }): Promise<User[]> {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.skill) query.set("skill", params.skill);
+    if (params?.role) query.set("role", params.role);
+
+    const res = await fetch(`${API_BASE_URL}/profile/search?${query.toString()}`, {
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to search developers");
+    }
+    return data.developers || [];
+  },
+
 
   // Fetch activities feed
   async getActivities(recipientHandle?: string): Promise<ActivityItem[]> {
@@ -281,5 +405,141 @@ export const api = {
       throw new Error(err.message || `Failed to ${status} request`);
     }
     return res.json();
+  },
+
+  // Posts: Get all posts
+  async getPosts(handle?: string): Promise<Post[]> {
+    try {
+      const url = handle
+        ? `${API_BASE_URL}/posts?handle=${encodeURIComponent(handle)}`
+        : `${API_BASE_URL}/posts`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch posts");
+      const json = await res.json();
+      return json.posts || [];
+    } catch (err) {
+      console.warn("Backend not reachable for posts, using fallback", err);
+      throw err;
+    }
+  },
+
+  // Posts: Create new post
+  async createPost(payload: Partial<Post>): Promise<Post> {
+    const res = await fetch(`${API_BASE_URL}/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to create post");
+    }
+    return json.post;
+  },
+
+  // Posts: Toggle like on a post
+  async toggleLike(
+    id: string,
+    handle?: string,
+    userName?: string
+  ): Promise<{ success: boolean; liked: boolean; likesCount: number; post: Post }> {
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/like`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ handle, userName }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to toggle like");
+    }
+    return json;
+  },
+
+  // Posts: Toggle bookmark on a post
+  async toggleBookmark(
+    id: string,
+    handle?: string
+  ): Promise<{ success: boolean; bookmarked: boolean; bookmarksCount: number; post: Post }> {
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/bookmark`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ handle }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to toggle bookmark");
+    }
+    return json;
+  },
+
+  // Posts: Get all bookmarked posts
+  async getBookmarks(handle?: string): Promise<Post[]> {
+    try {
+      const url = handle
+        ? `${API_BASE_URL}/posts/bookmarks?handle=${encodeURIComponent(handle)}`
+        : `${API_BASE_URL}/posts/bookmarks`;
+      const res = await fetch(url, {
+        headers: getAuthHeaders(),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to fetch bookmarks");
+      const json = await res.json();
+      return json.posts || [];
+    } catch (err) {
+      console.warn("Backend not reachable for bookmarks, using fallback", err);
+      throw err;
+    }
+  },
+
+  // Posts: Add comment to a post
+  async addComment(
+    id: string,
+    text: string,
+    user?: { name?: string; handle?: string; avatar?: string }
+  ): Promise<{ success: boolean; comment: any; commentsCount: number; commentsList: any[] }> {
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/comments`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        text,
+        handle: user?.handle,
+        author: user?.name,
+        avatar: user?.avatar,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to add comment");
+    }
+    return json;
+  },
+
+  // Posts: Get comments for a post
+  async getComments(id: string): Promise<any[]> {
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/comments`, {
+      cache: "no-store",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to fetch comments");
+    }
+    return json.comments || [];
+  },
+
+  // Posts: Record share
+  async recordShare(id: string): Promise<{ success: boolean; sharesCount: number }> {
+    const res = await fetch(`${API_BASE_URL}/posts/${id}/share`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to record share");
+    }
+    return json;
   },
 };

@@ -9,22 +9,8 @@ import { sendOtpEmail } from "../utils/emailService.js";
 const JWT_SECRET = process.env.JWT_SECRET || "projectbuddy_dev_secret_key_2026";
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// In-memory fallback if MongoDB is not connected
-const inMemoryUsers = [
-  {
-    _id: "usr-default-1",
-    id: "usr-default-1",
-    name: "Pranjal Shukla",
-    handle: "@pranjal",
-    email: "pranjal@projectbuddy.dev",
-    passwordHash: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890", // placeholder
-    role: "Fullstack Developer & Architect",
-    bio: "Building AI-assisted dev tools, distributed systems & high-performance web apps.",
-    initials: "PS",
-    skills: ["TypeScript", "Next.js", "Python", "MongoDB", "FastAPI"],
-    createdAt: new Date().toISOString(),
-  },
-];
+import { inMemoryUsers } from "../data/inMemoryStore.js";
+
 
 const isDbReady = () => mongoose.connection.readyState === 1;
 
@@ -547,7 +533,26 @@ export const getMe = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
-    const { avatar, name, role, bio, githubUrl, skills, initials } = req.body;
+    const {
+      avatar,
+      coverImage,
+      name,
+      role,
+      bio,
+      location,
+      websiteUrl,
+      githubUrl,
+      linkedinUrl,
+      twitterUrl,
+      pronouns,
+      customStatus,
+      availability,
+      experienceLevel,
+      interests,
+      skills,
+      initials,
+      stats,
+    } = req.body;
 
     if (isDbReady()) {
       const user = await User.findById(userId);
@@ -559,11 +564,24 @@ export const updateProfile = async (req, res) => {
       }
 
       if (avatar !== undefined) user.avatar = avatar;
+      if (coverImage !== undefined) user.coverImage = coverImage;
       if (name !== undefined && name.trim()) user.name = name.trim();
       if (role !== undefined && role.trim()) user.role = role.trim();
       if (bio !== undefined) user.bio = bio.trim();
+      if (location !== undefined) user.location = location.trim();
+      if (websiteUrl !== undefined) user.websiteUrl = websiteUrl.trim();
       if (githubUrl !== undefined) user.githubUrl = githubUrl.trim();
+      if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl.trim();
+      if (twitterUrl !== undefined) user.twitterUrl = twitterUrl.trim();
+      if (pronouns !== undefined) user.pronouns = pronouns.trim();
+      if (customStatus !== undefined) user.customStatus = customStatus.trim();
+      if (availability !== undefined) user.availability = availability;
+      if (experienceLevel !== undefined) user.experienceLevel = experienceLevel;
+      if (interests !== undefined && Array.isArray(interests)) user.interests = interests;
       if (skills !== undefined && Array.isArray(skills)) user.skills = skills;
+      if (stats !== undefined && typeof stats === "object") {
+        user.stats = { ...user.stats, ...stats };
+      }
       if (initials !== undefined && initials.trim()) {
         user.initials = initials.trim().toUpperCase();
       } else if (name) {
@@ -584,9 +602,20 @@ export const updateProfile = async (req, res) => {
           role: updatedUser.role,
           bio: updatedUser.bio,
           avatar: updatedUser.avatar,
+          coverImage: updatedUser.coverImage,
           initials: updatedUser.initials,
+          location: updatedUser.location,
+          websiteUrl: updatedUser.websiteUrl,
           githubUrl: updatedUser.githubUrl,
+          linkedinUrl: updatedUser.linkedinUrl,
+          twitterUrl: updatedUser.twitterUrl,
+          pronouns: updatedUser.pronouns,
+          customStatus: updatedUser.customStatus,
+          availability: updatedUser.availability,
+          experienceLevel: updatedUser.experienceLevel,
+          interests: updatedUser.interests,
           skills: updatedUser.skills,
+          stats: updatedUser.stats,
           authProvider: updatedUser.authProvider,
           createdAt: updatedUser.createdAt,
         },
@@ -612,18 +641,33 @@ export const updateProfile = async (req, res) => {
           role: req.user?.role || "Fullstack Engineer",
           bio: req.user?.bio || "",
           initials: req.user?.initials || "DEV",
+          location: "Global / Remote",
           skills: ["React", "TypeScript", "Node.js"],
           avatar: "",
+          coverImage: "",
         };
         inMemoryUsers.push(user);
       }
 
       if (avatar !== undefined) user.avatar = avatar;
+      if (coverImage !== undefined) user.coverImage = coverImage;
       if (name !== undefined && name.trim()) user.name = name.trim();
       if (role !== undefined && role.trim()) user.role = role.trim();
       if (bio !== undefined) user.bio = bio.trim();
+      if (location !== undefined) user.location = location.trim();
+      if (websiteUrl !== undefined) user.websiteUrl = websiteUrl.trim();
       if (githubUrl !== undefined) user.githubUrl = githubUrl.trim();
+      if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl.trim();
+      if (twitterUrl !== undefined) user.twitterUrl = twitterUrl.trim();
+      if (pronouns !== undefined) user.pronouns = pronouns.trim();
+      if (customStatus !== undefined) user.customStatus = customStatus.trim();
+      if (availability !== undefined) user.availability = availability;
+      if (experienceLevel !== undefined) user.experienceLevel = experienceLevel;
+      if (interests !== undefined && Array.isArray(interests)) user.interests = interests;
       if (skills !== undefined && Array.isArray(skills)) user.skills = skills;
+      if (stats !== undefined && typeof stats === "object") {
+        user.stats = { ...user.stats, ...stats };
+      }
       if (initials !== undefined && initials.trim()) {
         user.initials = initials.trim().toUpperCase();
       } else if (name) {
@@ -642,9 +686,20 @@ export const updateProfile = async (req, res) => {
           role: user.role,
           bio: user.bio,
           avatar: user.avatar,
+          coverImage: user.coverImage,
           initials: user.initials,
+          location: user.location,
+          websiteUrl: user.websiteUrl,
           githubUrl: user.githubUrl,
+          linkedinUrl: user.linkedinUrl,
+          twitterUrl: user.twitterUrl,
+          pronouns: user.pronouns,
+          customStatus: user.customStatus,
+          availability: user.availability,
+          experienceLevel: user.experienceLevel,
+          interests: user.interests,
           skills: user.skills,
+          stats: user.stats,
           authProvider: user.authProvider || "local",
           createdAt: user.createdAt,
         },
