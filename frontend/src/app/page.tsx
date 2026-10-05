@@ -204,6 +204,9 @@ function HomeContent() {
           <DiscoverView
             onJoinClick={handleRequestJoin}
             searchQuery={searchQuery}
+            onQuickViewProject={handleQuickViewProject}
+            openCreateModal={() => setCreateModalOpen(true)}
+            onNavigateToTab={(tab: string) => setActiveTab(tab)}
           />
         )}
 

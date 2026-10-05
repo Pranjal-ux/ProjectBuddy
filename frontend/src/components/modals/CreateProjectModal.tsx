@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Post } from "@/data/mockData";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 
 interface CreateProjectModalProps {
   open: boolean;
@@ -19,13 +21,15 @@ export function CreateProjectModal({
   onOpenChange,
   onPublish,
 }: CreateProjectModalProps) {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [tags, setTags] = useState("");
   const [teamSize, setTeamSize] = useState(4);
   const [lookingFor, setLookingFor] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !desc.trim()) return;
 
@@ -36,11 +40,12 @@ export function CreateProjectModal({
     const newPost: Post = {
       id: `proj-${Date.now()}`,
       author: {
-        name: "Pranjal Shukla",
-        handle: "@pranjal",
-        fallback: "PS",
+        name: user?.name || "Pranjal Shukla",
+        handle: user?.handle || "@pranjal",
+        fallback: user?.initials || "PS",
+        avatarUrl: user?.avatar,
         verified: true,
-        role: "Lead Creator",
+        role: user?.role || "Lead Creator",
       },
       createdAt: "Just now",
       type: "project",
@@ -62,6 +67,15 @@ export function CreateProjectModal({
       },
       userLiked: true,
     };
+
+    try {
+      setSubmitting(true);
+      await api.createPost(newPost);
+    } catch {
+      // Fallback optimistic UI
+    } finally {
+      setSubmitting(false);
+    }
 
     onPublish(newPost);
     setTitle("");
@@ -153,8 +167,17 @@ export function CreateProjectModal({
           </Button>
           <Button
             type="submit"
+            disabled={submitting}
+            className="flex items-center gap-1.5"
           >
-            Publish Project
+            {submitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin text-black" />
+                <span>Publishing...</span>
+              </>
+            ) : (
+              <span>Publish Project</span>
+            )}
           </Button>
         </div>
       </form>

@@ -319,11 +319,17 @@ export const api = {
   },
 
   // Profile: Search developers
-  async searchDevelopers(params?: { q?: string; skill?: string; role?: string }): Promise<User[]> {
+  async searchDevelopers(params?: {
+    q?: string;
+    skill?: string;
+    role?: string;
+    availability?: string;
+  }): Promise<User[]> {
     const query = new URLSearchParams();
     if (params?.q) query.set("q", params.q);
     if (params?.skill) query.set("skill", params.skill);
     if (params?.role) query.set("role", params.role);
+    if (params?.availability) query.set("availability", params.availability);
 
     const res = await fetch(`${API_BASE_URL}/profile/search?${query.toString()}`, {
       cache: "no-store",
