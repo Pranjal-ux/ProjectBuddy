@@ -93,12 +93,21 @@ const calculateUserStats = async (user) => {
         baseScore + (skillsCount > 3 ? 10 : skillsCount * 3) + Math.min(collaboratorsCount * 2, 8)
       );
 
+      const followersCount = Array.isArray(user.followers)
+        ? user.followers.length
+        : user.stats?.followersCount || 142;
+      const followingCount = Array.isArray(user.following)
+        ? user.following.length
+        : user.stats?.followingCount || 89;
+
       return {
         activeProjectsCount,
         teamsJoinedCount: Math.max(teamsJoined, user.stats?.teamsJoinedCount || 0),
         collaboratorsCount,
         matchScore: user.stats?.matchScore || computedScore,
         skillsCount,
+        followersCount,
+        followingCount,
       };
     } catch (err) {
       console.warn("Error calculating user stats from DB:", err.message);
@@ -114,6 +123,12 @@ const calculateUserStats = async (user) => {
   const collaboratorsCount = user.stats?.collaboratorsCount || 14;
   const matchScore = user.stats?.matchScore || 98;
   const skillsCount = Array.isArray(user.skills) ? user.skills.length : 9;
+  const followersCount = Array.isArray(user.followers)
+    ? user.followers.length
+    : user.stats?.followersCount || 142;
+  const followingCount = Array.isArray(user.following)
+    ? user.following.length
+    : user.stats?.followingCount || 89;
 
   return {
     activeProjectsCount,
@@ -121,14 +136,21 @@ const calculateUserStats = async (user) => {
     collaboratorsCount,
     matchScore,
     skillsCount,
+    followersCount,
+    followingCount,
   };
 };
 
 /**
  * Format user for response
  */
-const formatUserResponse = (user, stats) => {
+const formatUserResponse = (user, stats, currentViewerHandle) => {
   const id = user._id ? user._id.toString() : user.id;
+  const followers = user.followers || [];
+  const following = user.following || [];
+  const cleanViewer = currentViewerHandle ? formatHandle(currentViewerHandle) : null;
+  const isFollowing = cleanViewer ? followers.includes(cleanViewer) : false;
+
   return {
     id,
     _id: id,
@@ -151,11 +173,16 @@ const formatUserResponse = (user, stats) => {
     experienceLevel: user.experienceLevel || "mid",
     interests: user.interests || ["Web Development", "AI Systems", "Open Source"],
     skills: user.skills || ["React", "TypeScript", "Node.js"],
-    stats: stats || user.stats || {
-      activeProjectsCount: 3,
-      teamsJoinedCount: 5,
-      collaboratorsCount: 14,
-      matchScore: 98,
+    followers,
+    following,
+    isFollowing,
+    stats: {
+      activeProjectsCount: stats?.activeProjectsCount ?? user.stats?.activeProjectsCount ?? 3,
+      teamsJoinedCount: stats?.teamsJoinedCount ?? user.stats?.teamsJoinedCount ?? 5,
+      collaboratorsCount: stats?.collaboratorsCount ?? user.stats?.collaboratorsCount ?? 14,
+      matchScore: stats?.matchScore ?? user.stats?.matchScore ?? 98,
+      followersCount: stats?.followersCount ?? user.stats?.followersCount ?? (followers.length || 142),
+      followingCount: stats?.followingCount ?? user.stats?.followingCount ?? (following.length || 89),
     },
     isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : true,
     authProvider: user.authProvider || "local",
@@ -366,6 +393,7 @@ export const getUserProfile = async (req, res) => {
 
     const cleanHandle = formatHandle(identifier);
     const rawHandle = identifier.replace(/^@/, "").toLowerCase();
+    const viewerHandle = req.user?.handle || req.query.viewerHandle || null;
 
     if (isDbReady()) {
       let user = null;
@@ -392,7 +420,7 @@ export const getUserProfile = async (req, res) => {
       const stats = await calculateUserStats(user);
       return res.status(200).json({
         success: true,
-        user: formatUserResponse(user, stats),
+        user: formatUserResponse(user, stats, viewerHandle),
       });
     }
 
@@ -425,24 +453,28 @@ export const getUserProfile = async (req, res) => {
         customStatus: "Open to collaborate",
         availability: "open_to_collab",
         skills: ["TypeScript", "Next.js", "React", "Node.js", "TailwindCSS"],
+        followers: [],
+        following: [],
         stats: {
           activeProjectsCount: 2,
           teamsJoinedCount: 3,
           collaboratorsCount: 6,
           matchScore: 92,
+          followersCount: 54,
+          followingCount: 32,
         },
       };
 
       return res.status(200).json({
         success: true,
-        user: formatUserResponse(mockUser, mockUser.stats),
+        user: formatUserResponse(mockUser, mockUser.stats, viewerHandle),
       });
     }
 
     const stats = await calculateUserStats(user);
     return res.status(200).json({
       success: true,
-      user: formatUserResponse(user, stats),
+      user: formatUserResponse(user, stats, viewerHandle),
     });
   } catch (error) {
     console.error("Error in getUserProfile:", error);
@@ -849,6 +881,388 @@ export const searchDevelopers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to search developers",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Follow or unfollow a developer
+ * @route POST /api/profile/:identifier/follow
+ */
+export const toggleFollowUser = async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    if (!identifier) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile identifier is required",
+      });
+    }
+
+    // Determine current user acting as follower
+    const currentHandle = req.user?.handle
+      ? formatHandle(req.user.handle)
+      : req.body?.followerHandle
+      ? formatHandle(req.body.followerHandle)
+      : "@pranjal";
+
+    const currentUserName = req.user?.name || req.body?.followerName || "Pranjal Shukla";
+
+    const cleanTargetHandle = formatHandle(identifier);
+    const rawTargetHandle = identifier.replace(/^@/, "").toLowerCase();
+
+    if (cleanTargetHandle === currentHandle) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot follow yourself",
+      });
+    }
+
+    if (isDbReady()) {
+      let targetUser = null;
+      if (mongoose.Types.ObjectId.isValid(identifier)) {
+        targetUser = await User.findById(identifier);
+      }
+      if (!targetUser) {
+        targetUser = await User.findOne({
+          $or: [
+            { handle: cleanTargetHandle },
+            { handle: `@${rawTargetHandle}` },
+            { handle: rawTargetHandle },
+          ],
+        });
+      }
+
+      let currentUser = null;
+      if (req.user?._id) {
+        currentUser = await User.findById(req.user._id);
+      } else {
+        currentUser = await User.findOne({ handle: currentHandle });
+      }
+
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: `Developer '${identifier}' not found`,
+        });
+      }
+
+      if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
+      if (currentUser && !Array.isArray(currentUser.following)) {
+        currentUser.following = [];
+      }
+
+      const isFollowing = targetUser.followers.includes(currentHandle);
+
+      if (isFollowing) {
+        // Unfollow
+        targetUser.followers = targetUser.followers.filter((h) => h !== currentHandle);
+        if (currentUser) {
+          currentUser.following = currentUser.following.filter((h) => h !== cleanTargetHandle);
+          await currentUser.save();
+        }
+        await targetUser.save();
+
+        const stats = await calculateUserStats(targetUser);
+        return res.status(200).json({
+          success: true,
+          message: `Unfollowed ${targetUser.name}`,
+          isFollowing: false,
+          followersCount: targetUser.followers.length,
+          user: formatUserResponse(targetUser, stats, currentHandle),
+        });
+      } else {
+        // Follow
+        targetUser.followers.push(currentHandle);
+        if (currentUser) {
+          currentUser.following.push(cleanTargetHandle);
+          await currentUser.save();
+        }
+        await targetUser.save();
+
+        // Create notification activity
+        try {
+          await Activity.create({
+            type: "collab",
+            user: currentUserName,
+            handle: currentHandle,
+            initials: getInitials(currentUserName),
+            action: "started following you",
+            target: targetUser.handle,
+            recipientHandle: targetUser.handle,
+            hasAction: false,
+            status: "none",
+          });
+        } catch (actErr) {
+          console.warn("Could not record follow activity:", actErr.message);
+        }
+
+        const stats = await calculateUserStats(targetUser);
+        return res.status(200).json({
+          success: true,
+          message: `Following ${targetUser.name}`,
+          isFollowing: true,
+          followersCount: targetUser.followers.length,
+          user: formatUserResponse(targetUser, stats, currentHandle),
+        });
+      }
+    }
+
+    // In-memory fallback
+    let targetUser = inMemoryUsers.find(
+      (u) =>
+        u.id === identifier ||
+        u._id === identifier ||
+        formatHandle(u.handle) === cleanTargetHandle ||
+        u.handle.replace(/^@/, "").toLowerCase() === rawTargetHandle
+    );
+
+    if (!targetUser) {
+      targetUser = {
+        id: `usr-${rawTargetHandle}`,
+        _id: `usr-${rawTargetHandle}`,
+        name: rawTargetHandle
+          .split(/[\._\-]/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" "),
+        handle: `@${rawTargetHandle}`,
+        followers: [],
+        following: [],
+        skills: ["TypeScript", "React"],
+        stats: { followersCount: 1, followingCount: 0 },
+      };
+      inMemoryUsers.push(targetUser);
+    }
+
+    let currentUser = inMemoryUsers.find((u) => formatHandle(u.handle) === currentHandle);
+    if (!currentUser) {
+      currentUser = {
+        id: "usr-current",
+        _id: "usr-current",
+        name: currentUserName,
+        handle: currentHandle,
+        followers: [],
+        following: [],
+        stats: { followersCount: 142, followingCount: 89 },
+      };
+      inMemoryUsers.push(currentUser);
+    }
+
+    if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
+    if (!Array.isArray(currentUser.following)) currentUser.following = [];
+
+    const isFollowing = targetUser.followers.includes(currentHandle);
+
+    if (isFollowing) {
+      targetUser.followers = targetUser.followers.filter((h) => h !== currentHandle);
+      currentUser.following = currentUser.following.filter((h) => h !== cleanTargetHandle);
+
+      return res.status(200).json({
+        success: true,
+        message: `Unfollowed ${targetUser.name}`,
+        isFollowing: false,
+        followersCount: targetUser.followers.length,
+        user: formatUserResponse(targetUser, null, currentHandle),
+      });
+    } else {
+      targetUser.followers.push(currentHandle);
+      currentUser.following.push(cleanTargetHandle);
+
+      inMemoryActivities.unshift({
+        id: `act-${Date.now()}`,
+        _id: `act-${Date.now()}`,
+        type: "collab",
+        user: currentUserName,
+        handle: currentHandle,
+        initials: getInitials(currentUserName),
+        action: "started following you",
+        target: targetUser.handle,
+        recipientHandle: targetUser.handle,
+        hasAction: false,
+        status: "none",
+        createdAt: new Date().toISOString(),
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Following ${targetUser.name}`,
+        isFollowing: true,
+        followersCount: targetUser.followers.length,
+        user: formatUserResponse(targetUser, null, currentHandle),
+      });
+    }
+  } catch (error) {
+    console.error("Error in toggleFollowUser:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update follow status",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Get followers list for a user
+ * @route GET /api/profile/:identifier/followers
+ */
+export const getFollowers = async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const cleanHandle = formatHandle(identifier);
+    const rawHandle = identifier.replace(/^@/, "").toLowerCase();
+    const currentViewerHandle = req.user?.handle || req.query.viewerHandle || null;
+
+    let targetUser = null;
+    if (isDbReady()) {
+      if (mongoose.Types.ObjectId.isValid(identifier)) {
+        targetUser = await User.findById(identifier);
+      }
+      if (!targetUser) {
+        targetUser = await User.findOne({
+          $or: [
+            { handle: cleanHandle },
+            { handle: `@${rawHandle}` },
+            { handle: rawHandle },
+          ],
+        });
+      }
+    } else {
+      targetUser = inMemoryUsers.find(
+        (u) =>
+          u.id === identifier ||
+          u._id === identifier ||
+          formatHandle(u.handle) === cleanHandle ||
+          u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
+      );
+    }
+
+    const followerHandles = targetUser?.followers?.length
+      ? targetUser.followers
+      : ["@schen", "@arivera", "@elena_codes", "@dmarcus"];
+
+    const results = [];
+    for (const h of followerHandles) {
+      const cleanH = formatHandle(h);
+      let fUser = null;
+      if (isDbReady()) {
+        fUser = await User.findOne({ handle: cleanH });
+      }
+      if (!fUser) {
+        fUser = inMemoryUsers.find((u) => formatHandle(u.handle) === cleanH);
+      }
+      if (fUser) {
+        results.push(formatUserResponse(fUser, null, currentViewerHandle));
+      } else {
+        const rawH = cleanH.replace(/^@/, "");
+        results.push({
+          id: `f-${rawH}`,
+          _id: `f-${rawH}`,
+          name: rawH.charAt(0).toUpperCase() + rawH.slice(1),
+          handle: cleanH,
+          role: "Developer",
+          initials: rawH.slice(0, 2).toUpperCase(),
+          avatar: "",
+          skills: ["TypeScript", "React"],
+          isFollowing: currentViewerHandle ? cleanH === formatHandle(currentViewerHandle) : false,
+          stats: { followersCount: 45, followingCount: 30, activeProjectsCount: 1, matchScore: 92 },
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: results.length,
+      followers: results,
+    });
+  } catch (error) {
+    console.error("Error in getFollowers:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch followers",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Get following list for a user
+ * @route GET /api/profile/:identifier/following
+ */
+export const getFollowing = async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const cleanHandle = formatHandle(identifier);
+    const rawHandle = identifier.replace(/^@/, "").toLowerCase();
+    const currentViewerHandle = req.user?.handle || req.query.viewerHandle || null;
+
+    let targetUser = null;
+    if (isDbReady()) {
+      if (mongoose.Types.ObjectId.isValid(identifier)) {
+        targetUser = await User.findById(identifier);
+      }
+      if (!targetUser) {
+        targetUser = await User.findOne({
+          $or: [
+            { handle: cleanHandle },
+            { handle: `@${rawHandle}` },
+            { handle: rawHandle },
+          ],
+        });
+      }
+    } else {
+      targetUser = inMemoryUsers.find(
+        (u) =>
+          u.id === identifier ||
+          u._id === identifier ||
+          formatHandle(u.handle) === cleanHandle ||
+          u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
+      );
+    }
+
+    const followingHandles = targetUser?.following?.length
+      ? targetUser.following
+      : ["@schen", "@arivera"];
+
+    const results = [];
+    for (const h of followingHandles) {
+      const cleanH = formatHandle(h);
+      let fUser = null;
+      if (isDbReady()) {
+        fUser = await User.findOne({ handle: cleanH });
+      }
+      if (!fUser) {
+        fUser = inMemoryUsers.find((u) => formatHandle(u.handle) === cleanH);
+      }
+      if (fUser) {
+        results.push(formatUserResponse(fUser, null, currentViewerHandle));
+      } else {
+        const rawH = cleanH.replace(/^@/, "");
+        results.push({
+          id: `fg-${rawH}`,
+          _id: `fg-${rawH}`,
+          name: rawH.charAt(0).toUpperCase() + rawH.slice(1),
+          handle: cleanH,
+          role: "Developer",
+          initials: rawH.slice(0, 2).toUpperCase(),
+          avatar: "",
+          skills: ["TypeScript", "Next.js"],
+          isFollowing: true,
+          stats: { followersCount: 88, followingCount: 42, activeProjectsCount: 2, matchScore: 94 },
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: results.length,
+      following: results,
+    });
+  } catch (error) {
+    console.error("Error in getFollowing:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch following list",
       error: error.message,
     });
   }

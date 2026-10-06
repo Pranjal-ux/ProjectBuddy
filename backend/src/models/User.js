@@ -119,6 +119,14 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: ["JavaScript", "React", "Node.js"],
     },
+    followers: {
+      type: [String],
+      default: [],
+    },
+    following: {
+      type: [String],
+      default: [],
+    },
     stats: {
       activeProjectsCount: {
         type: Number,
@@ -135,6 +143,14 @@ const userSchema = new mongoose.Schema(
       matchScore: {
         type: Number,
         default: 95,
+      },
+      followersCount: {
+        type: Number,
+        default: 0,
+      },
+      followingCount: {
+        type: Number,
+        default: 0,
       },
     },
   },
@@ -173,6 +189,8 @@ userSchema.methods.toPublicProfile = function () {
     experienceLevel: this.experienceLevel,
     interests: this.interests,
     skills: this.skills,
+    followers: this.followers || [],
+    following: this.following || [],
     stats: this.stats,
     createdAt: this.createdAt,
   };

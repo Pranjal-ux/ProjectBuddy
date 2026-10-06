@@ -26,6 +26,9 @@ interface AuthContextType {
   }) => Promise<void>;
   logout: () => void;
   updateUserProfile: (data: Partial<User>) => Promise<boolean>;
+  followedHandles: string[];
+  isFollowing: (handleOrId: string) => boolean;
+  toggleFollowUser: (target: { handle: string; name?: string; id?: string }) => Promise<{ isFollowing: boolean; followersCount?: number }>;
   openAuthModal: (initialMode?: "login" | "register") => void;
   closeAuthModal: () => void;
   authModalOpen: boolean;
@@ -42,6 +45,16 @@ const defaultUser: User = {
   bio: "Building developer-first collaboration tools, AI systems, and cloud architectures.",
   initials: "PS",
   skills: ["Next.js", "TypeScript", "Node.js", "MongoDB", "Python", "TailwindCSS"],
+  followers: ["@schen", "@arivera", "@elena_codes", "@dmarcus"],
+  following: ["@schen", "@arivera"],
+  stats: {
+    activeProjectsCount: 3,
+    teamsJoinedCount: 5,
+    collaboratorsCount: 14,
+    matchScore: 98,
+    followersCount: 142,
+    followingCount: 89,
+  },
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,6 +65,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "register">("login");
+  const [followedHandles, setFollowedHandles] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("projectbuddy_following");
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return ["@schen", "@arivera"];
+  });
 
   // Load user & token from localStorage on initial render
   useEffect(() => {
@@ -185,6 +207,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isFollowing = (handleOrId: string) => {
+    if (!handleOrId) return false;
+    let clean = handleOrId.trim().toLowerCase();
+    if (!clean.startsWith("@")) clean = `@${clean}`;
+    return followedHandles.some((h) => {
+      let norm = h.trim().toLowerCase();
+      if (!norm.startsWith("@")) norm = `@${norm}`;
+      return norm === clean;
+    });
+  };
+
+  const toggleFollowUser = async (target: { handle: string; name?: string; id?: string }) => {
+    if (!target.handle) return { isFollowing: false };
+    let clean = target.handle.trim().toLowerCase();
+    if (!clean.startsWith("@")) clean = `@${clean}`;
+
+    const alreadyFollowing = isFollowing(clean);
+    let nextFollowed: string[];
+
+    if (alreadyFollowing) {
+      nextFollowed = followedHandles.filter((h) => {
+        let norm = h.trim().toLowerCase();
+        if (!norm.startsWith("@")) norm = `@${norm}`;
+        return norm !== clean;
+      });
+    } else {
+      nextFollowed = [...followedHandles, clean];
+    }
+
+    setFollowedHandles(nextFollowed);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("projectbuddy_following", JSON.stringify(nextFollowed));
+    }
+
+    // Update current user's following stats dynamically
+    setUser((prev) => {
+      if (!prev) return prev;
+      const currentFollowing = prev.following || [];
+      const updatedFollowing = alreadyFollowing
+        ? currentFollowing.filter((h) => h.toLowerCase() !== clean)
+        : [...currentFollowing, clean];
+
+      const currentStats = prev.stats || {};
+      const currentCount = currentStats.followingCount ?? updatedFollowing.length;
+      const nextCount = Math.max(0, alreadyFollowing ? currentCount - 1 : currentCount + 1);
+
+      const updated: User = {
+        ...prev,
+        following: updatedFollowing,
+        stats: {
+          ...currentStats,
+          followingCount: nextCount,
+        },
+      };
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("projectbuddy_user", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    // Notify backend
+    try {
+      const res = await api.toggleFollow(clean, {
+        followerHandle: user?.handle || "@pranjal",
+        followerName: user?.name || "Pranjal Shukla",
+      });
+      return { isFollowing: res.isFollowing, followersCount: res.followersCount };
+    } catch {
+      // Offline fallback succeeded locally
+      return { isFollowing: !alreadyFollowing };
+    }
+  };
+
   const openAuthModal = (mode: "login" | "register" = "login") => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
@@ -210,6 +306,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         googleLogin,
         logout,
         updateUserProfile,
+        followedHandles,
+        isFollowing,
+        toggleFollowUser,
         openAuthModal,
         closeAuthModal,
         authModalOpen,

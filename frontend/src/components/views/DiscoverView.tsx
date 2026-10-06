@@ -113,7 +113,7 @@ export function DiscoverView({
   openCreateModal,
   onNavigateToTab,
 }: DiscoverViewProps) {
-  const { user } = useAuth();
+  const { user, isFollowing, toggleFollowUser } = useAuth();
 
   // Mode: "projects" vs "developers"
   const [activeMode, setActiveMode] = useState<"projects" | "developers">("projects");
@@ -1313,20 +1313,40 @@ export function DiscoverView({
                       onClick={() => setSelectedDeveloperForModal(dev)}
                       className="h-8 px-2.5 text-xs text-[var(--text-secondary)] hover:text-white cursor-pointer"
                     >
-                      <span>Profile</span>
+                      <span>Snapshot</span>
                     </Button>
 
                     <div className="flex items-center gap-1.5">
+                      {/* Follow toggle button */}
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (onNavigateToTab) onNavigateToTab("messages");
-                        }}
-                        className="h-8 px-2.5 text-xs text-white border-[var(--border-subtle)] hover:bg-[var(--bg-surface-high)] cursor-pointer"
-                        title="Send direct message"
+                        variant={isFollowing(dev.handle) ? "outline" : "secondary"}
+                        onClick={() =>
+                          toggleFollowUser({
+                            handle: dev.handle,
+                            name: dev.name,
+                            id: dev.id,
+                          })
+                        }
+                        className={`h-8 px-2.5 text-xs rounded-lg gap-1 cursor-pointer group/btn ${
+                          isFollowing(dev.handle)
+                            ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
+                            : "bg-[var(--bg-surface-high)] text-white hover:bg-white hover:text-black font-medium"
+                        }`}
                       >
-                        <MessageSquare className="size-3.5" />
+                        {isFollowing(dev.handle) ? (
+                          <>
+                            <Check className="size-3 text-emerald-400 group-hover/btn:hidden" />
+                            <span className="group-hover/btn:hidden">Following</span>
+                            <X className="size-3 hidden group-hover/btn:inline text-red-400" />
+                            <span className="hidden group-hover/btn:inline">Unfollow</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="size-3" />
+                            <span>Follow</span>
+                          </>
+                        )}
                       </Button>
 
                       <Button
@@ -1481,6 +1501,35 @@ export function DiscoverView({
                 onClick={() => setSelectedDeveloperForModal(null)}
               >
                 Close
+              </Button>
+
+              {/* Follow Toggle */}
+              <Button
+                variant={isFollowing(selectedDeveloperForModal.handle) ? "outline" : "secondary"}
+                onClick={() =>
+                  toggleFollowUser({
+                    handle: selectedDeveloperForModal.handle,
+                    name: selectedDeveloperForModal.name,
+                    id: selectedDeveloperForModal.id,
+                  })
+                }
+                className={`gap-1.5 cursor-pointer ${
+                  isFollowing(selectedDeveloperForModal.handle)
+                    ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
+                    : "bg-white hover:bg-neutral-200 text-black font-semibold"
+                }`}
+              >
+                {isFollowing(selectedDeveloperForModal.handle) ? (
+                  <>
+                    <Check className="size-3.5 text-emerald-400" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="size-3.5" />
+                    <span>Follow</span>
+                  </>
+                )}
               </Button>
 
               <Button

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Sparkles, TrendingUp, Users, Check, ExternalLink } from "lucide-react";
+import { Search, Sparkles, TrendingUp, Users, Check, ExternalLink, X } from "lucide-react";
 import { suggestedProjects, suggestedPeople } from "@/data/mockData";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 interface RightSidebarProps {
   searchQuery: string;
@@ -20,14 +21,7 @@ export function RightSidebar({
   onSelectTag,
   onQuickViewProject,
 }: RightSidebarProps) {
-  const [followedUsers, setFollowedUsers] = useState<Record<string, boolean>>({});
-
-  const toggleFollow = (id: string) => {
-    setFollowedUsers((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
+  const { isFollowing, toggleFollowUser } = useAuth();
 
   const trendingTags = [
     { tag: "Nextjs15", posts: "1.4k posts" },
@@ -119,7 +113,7 @@ export function RightSidebar({
 
         <div className="flex flex-col gap-2.5">
           {suggestedPeople.map((person) => {
-            const isFollowing = !!followedUsers[person.id];
+            const followed = isFollowing(person.handle);
             return (
               <div
                 key={person.id}
@@ -144,14 +138,26 @@ export function RightSidebar({
 
                 <Button
                   size="sm"
-                  variant={isFollowing ? "outline" : "secondary"}
-                  onClick={() => toggleFollow(person.id)}
-                  className="h-7 px-3 text-xs shrink-0 rounded-lg gap-1"
+                  variant={followed ? "outline" : "secondary"}
+                  onClick={() =>
+                    toggleFollowUser({
+                      handle: person.handle,
+                      name: person.name,
+                      id: person.id,
+                    })
+                  }
+                  className={`h-7 px-3 text-xs shrink-0 rounded-lg gap-1 transition-all cursor-pointer group/btn ${
+                    followed
+                      ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
+                      : "bg-white hover:bg-neutral-200 text-black font-semibold shadow-sm"
+                  }`}
                 >
-                  {isFollowing ? (
+                  {followed ? (
                     <>
-                      <Check className="size-3 text-emerald-400" />
-                      <span>Following</span>
+                      <Check className="size-3 text-emerald-400 group-hover/btn:hidden" />
+                      <span className="group-hover/btn:hidden">Following</span>
+                      <X className="size-3 hidden group-hover/btn:inline text-red-400" />
+                      <span className="hidden group-hover/btn:inline">Unfollow</span>
                     </>
                   ) : (
                     <span>Follow</span>

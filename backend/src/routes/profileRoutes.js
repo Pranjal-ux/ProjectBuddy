@@ -12,6 +12,9 @@ import {
   deleteCoverImage,
   updateSkills,
   searchDevelopers,
+  toggleFollowUser,
+  getFollowers,
+  getFollowing,
 } from "../controllers/profileController.js";
 import { protect, optionalProtect } from "../middleware/authMiddleware.js";
 
@@ -28,6 +31,12 @@ router.put("/me/skills", protect, updateSkills);
 
 // Developer discovery / search
 router.get("/search", searchDevelopers);
+
+// Follow / Following system
+router.post("/:identifier/follow", optionalProtect, toggleFollowUser);
+router.delete("/:identifier/follow", optionalProtect, toggleFollowUser);
+router.get("/:identifier/followers", optionalProtect, getFollowers);
+router.get("/:identifier/following", optionalProtect, getFollowing);
 
 // Public / user profile inspection routes (by handle @handle or ID)
 router.get("/:identifier", optionalProtect, getUserProfile);

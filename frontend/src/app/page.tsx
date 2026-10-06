@@ -22,7 +22,7 @@ import { AuthModal } from "@/components/modals/AuthModal";
 import { api } from "@/lib/api";
 
 function HomeContent() {
-  const { user } = useAuth();
+  const { user, isFollowing } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
   const [feedFilter, setFeedFilter] = useState<
     "for-you" | "following" | "open-teams" | "showcases"
@@ -109,6 +109,12 @@ function HomeContent() {
       if (!matches) return false;
     }
 
+    if (feedFilter === "following") {
+      const authorHandle = post.author.handle;
+      const followed = isFollowing(authorHandle);
+      const isSelf = user?.handle && authorHandle.toLowerCase() === user.handle.toLowerCase();
+      return followed || isSelf;
+    }
     if (feedFilter === "open-teams") {
       return !!post.team;
     }
@@ -176,14 +182,27 @@ function HomeContent() {
               {filteredPosts.length === 0 ? (
                 <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
                   <p className="text-sm text-[var(--text-secondary)]">
-                    No posts matched &quot;{searchQuery}&quot;
+                    {feedFilter === "following"
+                      ? "No posts from developers you follow yet. Follow buddies in the sidebar or Discover section to see their updates here!"
+                      : searchQuery
+                      ? `No posts matched "${searchQuery}"`
+                      : "No posts available in this view."}
                   </p>
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="text-xs text-white hover:underline cursor-pointer"
-                  >
-                    Clear search filter
-                  </button>
+                  {feedFilter === "following" ? (
+                    <button
+                      onClick={() => setActiveTab("discover")}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium cursor-pointer transition-colors mt-1"
+                    >
+                      Explore & Follow Tech Buddies →
+                    </button>
+                  ) : searchQuery ? (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs text-white hover:underline cursor-pointer"
+                    >
+                      Clear search filter
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 filteredPosts.map((post) => (

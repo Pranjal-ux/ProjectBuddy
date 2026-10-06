@@ -9,6 +9,8 @@ export interface ProfileStats {
   collaboratorsCount?: number;
   matchScore?: number;
   skillsCount?: number;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 export interface User {
@@ -16,7 +18,7 @@ export interface User {
   _id?: string;
   name: string;
   handle: string;
-  email: string;
+  email?: string;
   role?: string;
   bio?: string;
   avatar?: string;
@@ -33,6 +35,9 @@ export interface User {
   experienceLevel?: "junior" | "mid" | "senior" | "lead" | "architect";
   interests?: string[];
   skills?: string[];
+  followers?: string[];
+  following?: string[];
+  isFollowing?: boolean;
   stats?: ProfileStats;
   createdAt?: string;
   updatedAt?: string;
@@ -341,6 +346,57 @@ export const api = {
     return data.developers || [];
   },
 
+  // Profile: Toggle follow status (follow/unfollow a developer)
+  async toggleFollow(
+    identifier: string,
+    followerData?: { followerHandle?: string; followerName?: string }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    isFollowing: boolean;
+    followersCount: number;
+    user?: User;
+  }> {
+    const res = await fetch(
+      `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/follow`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(followerData || {}),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to update follow status");
+    }
+    return data;
+  },
+
+  // Profile: Get followers list for a developer
+  async getFollowers(identifier: string, viewerHandle?: string): Promise<User[]> {
+    const url = viewerHandle
+      ? `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/followers?viewerHandle=${encodeURIComponent(viewerHandle)}`
+      : `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/followers`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch followers");
+    }
+    return data.followers || [];
+  },
+
+  // Profile: Get following list for a developer
+  async getFollowing(identifier: string, viewerHandle?: string): Promise<User[]> {
+    const url = viewerHandle
+      ? `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/following?viewerHandle=${encodeURIComponent(viewerHandle)}`
+      : `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/following`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch following list");
+    }
+    return data.following || [];
+  },
 
   // Fetch activities feed
   async getActivities(recipientHandle?: string): Promise<ActivityItem[]> {
