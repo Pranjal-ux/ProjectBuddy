@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
 import {
   LogIn,
   UserPlus,
@@ -513,7 +514,10 @@ export function AuthModal() {
   return (
     <Dialog open={authModalOpen} onOpenChange={closeAuthModal}>
       <DialogHeader onClose={closeAuthModal}>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <ProjectBuddyLogo variant="full" size="sm" />
+          </div>
           <div className="flex items-center gap-2">
             {otpStep ? (
               <ShieldCheck className="size-5 text-white" />

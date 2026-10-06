@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -61,24 +62,11 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
           <div className="flex items-center justify-between px-1 pt-1 lg:px-2">
             <div
               onClick={() => setActiveTab("home")}
-              className="flex items-center gap-2.5 cursor-pointer"
+              className="flex items-center cursor-pointer transition-transform hover:scale-[1.02]"
+              title="ProjectBuddy Home"
             >
-              <div className="size-9 rounded-xl bg-white flex items-center justify-center text-black shadow-md shrink-0">
-                <Layers className="size-5" />
-              </div>
-              {/* Brand text — hidden on tablet (sm/md), shown lg+ */}
-              <div className="hidden lg:flex flex-col">
-                <span className="font-bold text-lg tracking-tight text-white leading-none">
-                  ProjectBuddy
-                </span>
-                <span className="text-[11px] font-mono text-[var(--text-muted)] tracking-wider mt-0.5">
-                  DEV NETWORK
-                </span>
-              </div>
+              <ProjectBuddyLogo variant="responsive" size="md" showBadge={true} />
             </div>
-            <span className="hidden lg:inline text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-surface-high)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
-              v1.0
-            </span>
           </div>
 
           {/* Navigation list */}

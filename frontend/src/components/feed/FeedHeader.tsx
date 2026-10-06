@@ -5,6 +5,8 @@ import { Moon, Sun, Filter, Code, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
+
 interface FeedHeaderProps {
   feedFilter: "for-you" | "following" | "open-teams" | "showcases";
   setFeedFilter: (filter: "for-you" | "following" | "open-teams" | "showcases") => void;
@@ -32,6 +34,9 @@ export function FeedHeader({
       {/* Top Header Row */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5">
         <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex sm:hidden">
+            <ProjectBuddyLogo variant="icon" size="xs" />
+          </div>
           <h1 className="font-bold text-base sm:text-xl text-white tracking-tight">
             {theme === "oled" ? "OLED Feed" : "Home Feed"}
           </h1>

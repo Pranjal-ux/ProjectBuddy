@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ProjectBuddy — Developer Network & Project Collaboration",
   description: "Connect, discover projects, recruit teammates, and share code snippets in high-contrast developer aesthetic.",
+  icons: {
+    icon: "/projectbuddy-logo.png",
+    shortcut: "/projectbuddy-logo.png",
+    apple: "/projectbuddy-logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

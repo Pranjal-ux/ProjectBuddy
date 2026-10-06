@@ -193,7 +193,14 @@ export function RightSidebar({
       </div>
 
       {/* Footer Info */}
-      <div className="mt-auto pt-4 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] flex flex-col gap-1">
+      <div className="mt-auto pt-4 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <img
+            src="/projectbuddy-logo.png"
+            alt="ProjectBuddy"
+            className="h-6 w-auto object-contain opacity-90"
+          />
+        </div>
         <div className="flex gap-3">
           <a href="#" className="hover:text-[var(--text-secondary)]">About</a>
           <a href="#" className="hover:text-[var(--text-secondary)]">Guidelines</a>
