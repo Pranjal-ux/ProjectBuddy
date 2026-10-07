@@ -110,13 +110,19 @@ export function FollowListModal({
         )
       );
 
-      setFollowingList((prev) =>
-        prev.map((item) =>
-          item.handle?.toLowerCase() === handle.toLowerCase()
-            ? { ...item, isFollowing: res.isFollowing }
-            : item
-        )
-      );
+      setFollowingList((prev) => {
+        const exists = prev.some((item) => item.handle?.toLowerCase() === handle.toLowerCase());
+        if (exists) {
+          return prev.map((item) =>
+            item.handle?.toLowerCase() === handle.toLowerCase()
+              ? { ...item, isFollowing: res.isFollowing }
+              : item
+          );
+        } else if (res.isFollowing && targetUser?.handle?.toLowerCase() === authUser?.handle?.toLowerCase()) {
+          return [...prev, { ...dev, isFollowing: true }];
+        }
+        return prev;
+      });
     } finally {
       setTogglingHandles((prev) => {
         const next = new Set(prev);

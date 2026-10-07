@@ -363,8 +363,8 @@ export const createPost = async (req, res) => {
 export const toggleLike = async (req, res) => {
   try {
     const { id } = req.params;
-    let handle = req.user?.handle || req.body.handle || "@developer";
-    if (!handle.startsWith("@")) handle = `@${handle}`;
+    let rawHandle = req.user?.handle || req.body.handle || "@developer";
+    const handle = normalizeHandle(rawHandle);
     const userName = req.user?.name || req.body.userName || "Developer";
 
     if (isDbReady()) {
@@ -377,16 +377,18 @@ export const toggleLike = async (req, res) => {
         });
       }
 
-      const hasLiked = post.likedBy.includes(handle);
+      if (!Array.isArray(post.likedBy)) post.likedBy = [];
+      const hasLiked = post.likedBy.some((h) => normalizeHandle(h) === handle);
+
       if (hasLiked) {
-        post.likedBy = post.likedBy.filter((h) => h !== handle);
-        post.stats.likes = Math.max(0, (post.stats.likes || 1) - 1);
+        post.likedBy = post.likedBy.filter((h) => normalizeHandle(h) !== handle);
+        post.stats.likes = Math.max(0, (post.stats?.likes || 1) - 1);
       } else {
         post.likedBy.push(handle);
-        post.stats.likes = (post.stats.likes || 0) + 1;
+        post.stats.likes = (post.stats?.likes || 0) + 1;
 
         // Create activity notification for post author if different user
-        if (post.author.handle !== handle) {
+        if (normalizeHandle(post.author.handle) !== handle) {
           try {
             await Activity.create({
               type: "like",
@@ -405,6 +407,8 @@ export const toggleLike = async (req, res) => {
         }
       }
 
+      post.markModified("likedBy");
+      post.markModified("stats");
       await post.save();
 
       return res.status(200).json({
@@ -653,11 +657,13 @@ export const addComment = async (req, res) => {
         });
       }
 
+      if (!Array.isArray(post.commentsList)) post.commentsList = [];
       post.commentsList.push(newComment);
+      post.stats = post.stats || {};
       post.stats.comments = post.commentsList.length;
 
       // Activity notification
-      if (post.author.handle !== handle) {
+      if (normalizeHandle(post.author.handle) !== handle) {
         try {
           await Activity.create({
             type: "collab",
@@ -675,6 +681,8 @@ export const addComment = async (req, res) => {
         }
       }
 
+      post.markModified("commentsList");
+      post.markModified("stats");
       await post.save();
 
       return res.status(201).json({

@@ -355,7 +355,10 @@ export const api = {
     message: string;
     isFollowing: boolean;
     followersCount: number;
+    followingCount?: number;
     user?: User;
+    currentUser?: User;
+    following?: string[];
   }> {
     const res = await fetch(
       `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/follow`,

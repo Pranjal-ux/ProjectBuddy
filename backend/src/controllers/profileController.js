@@ -417,6 +417,36 @@ export const getUserProfile = async (req, res) => {
       }
 
       if (!user) {
+        const mem = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanHandle ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
+        );
+        if (mem) {
+          try {
+            user = await User.create({
+              name: mem.name,
+              handle: cleanHandle,
+              email: mem.email || `${rawHandle}@projectbuddy.dev`,
+              password: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+              role: mem.role || "Developer",
+              bio: mem.bio || "",
+              avatar: mem.avatar || "",
+              initials: mem.initials || getInitials(mem.name),
+              skills: mem.skills || ["JavaScript"],
+              followers: mem.followers || [],
+              following: mem.following || [],
+              stats: mem.stats || { followersCount: (mem.followers || []).length, followingCount: (mem.following || []).length },
+              isEmailVerified: true,
+              authProvider: "local",
+            });
+          } catch (e) {
+            console.warn("Could not upsert mem user to db:", e.message);
+          }
+        }
+      }
+
+      if (!user) {
         return res.status(404).json({
           success: false,
           message: `Developer profile '${identifier}' not found`,
@@ -653,7 +683,9 @@ export const getUserStats = async (req, res) => {
           ],
         });
       }
-    } else {
+    }
+
+    if (!user) {
       user = inMemoryUsers.find(
         (u) =>
           formatHandle(u.handle) === cleanHandle ||
@@ -954,6 +986,43 @@ export const toggleFollowUser = async (req, res) => {
         });
       }
 
+      if (!targetUser) {
+        const memTarget = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanTargetHandle ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawTargetHandle
+        );
+        if (memTarget) {
+          try {
+            targetUser = await User.create({
+              name: memTarget.name,
+              handle: cleanTargetHandle,
+              email: memTarget.email || `${rawTargetHandle}@projectbuddy.dev`,
+              password: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+              role: memTarget.role || "Developer",
+              bio: memTarget.bio || "",
+              avatar: memTarget.avatar || "",
+              initials: memTarget.initials || getInitials(memTarget.name),
+              skills: memTarget.skills || ["JavaScript"],
+              followers: memTarget.followers || [],
+              following: memTarget.following || [],
+              stats: memTarget.stats || { followersCount: 0, followingCount: 0 },
+              isEmailVerified: true,
+              authProvider: "local",
+            });
+          } catch (e) {
+            console.warn("Could not upsert mem target user to db:", e.message);
+          }
+        }
+      }
+
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: `Developer '${identifier}' not found`,
+        });
+      }
+
       let currentUser = null;
       if (req.user?._id) {
         currentUser = await User.findById(req.user._id);
@@ -968,17 +1037,38 @@ export const toggleFollowUser = async (req, res) => {
         });
       }
 
-      if (!targetUser) {
-        return res.status(404).json({
-          success: false,
-          message: `Developer '${identifier}' not found`,
-        });
+      if (!currentUser) {
+        const memCur = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === currentHandle ||
+            u.handle?.replace(/^@/, "").toLowerCase() === currentHandle.replace(/^@/, "").toLowerCase()
+        );
+        try {
+          currentUser = await User.create({
+            name: memCur?.name || currentUserName,
+            handle: currentHandle,
+            email: memCur?.email || `${currentHandle.replace(/^@/, "")}@projectbuddy.dev`,
+            password: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+            role: memCur?.role || "Fullstack Architect",
+            bio: memCur?.bio || "Building developer-first collaboration tools on ProjectBuddy.",
+            avatar: memCur?.avatar || "",
+            initials: memCur?.initials || getInitials(currentUserName),
+            skills: memCur?.skills || ["JavaScript", "React"],
+            followers: memCur?.followers || [],
+            following: memCur?.following || [],
+            stats: memCur?.stats || { followersCount: 0, followingCount: 0 },
+            isEmailVerified: true,
+            authProvider: "local",
+          });
+        } catch (e) {
+          console.warn("Could not upsert current user to db:", e.message);
+        }
       }
 
       if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
-      if (currentUser && !Array.isArray(currentUser.following)) {
-        currentUser.following = [];
-      }
+      if (!Array.isArray(targetUser.following)) targetUser.following = [];
+      if (currentUser && !Array.isArray(currentUser.followers)) currentUser.followers = [];
+      if (currentUser && !Array.isArray(currentUser.following)) currentUser.following = [];
 
       const isFollowing = targetUser.followers.some(
         (h) => formatHandle(h) === currentHandle
@@ -991,6 +1081,8 @@ export const toggleFollowUser = async (req, res) => {
         );
         targetUser.stats = targetUser.stats || {};
         targetUser.stats.followersCount = targetUser.followers.length;
+        targetUser.markModified("followers");
+        targetUser.markModified("stats");
         await targetUser.save();
 
         if (currentUser) {
@@ -999,23 +1091,32 @@ export const toggleFollowUser = async (req, res) => {
           );
           currentUser.stats = currentUser.stats || {};
           currentUser.stats.followingCount = currentUser.following.length;
+          currentUser.markModified("following");
+          currentUser.markModified("stats");
           await currentUser.save();
         }
 
-        const stats = await calculateUserStats(targetUser);
+        const targetStats = await calculateUserStats(targetUser);
+        const currentStats = currentUser ? await calculateUserStats(currentUser) : null;
         return res.status(200).json({
           success: true,
           message: `Unfollowed ${targetUser.name}`,
           isFollowing: false,
           followersCount: targetUser.followers.length,
-          followingCount: currentUser ? currentUser.following.length : undefined,
-          user: formatUserResponse(targetUser, stats, currentHandle),
+          followingCount: currentUser ? currentUser.following.length : 0,
+          user: formatUserResponse(targetUser, targetStats, currentHandle),
+          currentUser: currentUser ? formatUserResponse(currentUser, currentStats, currentHandle) : null,
+          following: currentUser ? currentUser.following : [],
         });
       } else {
         // Follow
-        targetUser.followers.push(currentHandle);
+        if (!targetUser.followers.some((h) => formatHandle(h) === currentHandle)) {
+          targetUser.followers.push(currentHandle);
+        }
         targetUser.stats = targetUser.stats || {};
         targetUser.stats.followersCount = targetUser.followers.length;
+        targetUser.markModified("followers");
+        targetUser.markModified("stats");
         await targetUser.save();
 
         if (currentUser) {
@@ -1024,6 +1125,8 @@ export const toggleFollowUser = async (req, res) => {
           }
           currentUser.stats = currentUser.stats || {};
           currentUser.stats.followingCount = currentUser.following.length;
+          currentUser.markModified("following");
+          currentUser.markModified("stats");
           await currentUser.save();
         }
 
@@ -1044,14 +1147,17 @@ export const toggleFollowUser = async (req, res) => {
           console.warn("Could not record follow activity:", actErr.message);
         }
 
-        const stats = await calculateUserStats(targetUser);
+        const targetStats = await calculateUserStats(targetUser);
+        const currentStats = currentUser ? await calculateUserStats(currentUser) : null;
         return res.status(200).json({
           success: true,
           message: `Following ${targetUser.name}`,
           isFollowing: true,
           followersCount: targetUser.followers.length,
-          followingCount: currentUser ? currentUser.following.length : undefined,
-          user: formatUserResponse(targetUser, stats, currentHandle),
+          followingCount: currentUser ? currentUser.following.length : 0,
+          user: formatUserResponse(targetUser, targetStats, currentHandle),
+          currentUser: currentUser ? formatUserResponse(currentUser, currentStats, currentHandle) : null,
+          following: currentUser ? currentUser.following : [],
         });
       }
     }
@@ -1198,6 +1304,36 @@ export const getFollowers = async (req, res) => {
           ],
         });
       }
+
+      if (!targetUser) {
+        const mem = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanHandle ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
+        );
+        if (mem) {
+          try {
+            targetUser = await User.create({
+              name: mem.name,
+              handle: cleanHandle,
+              email: mem.email || `${rawHandle}@projectbuddy.dev`,
+              password: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+              role: mem.role || "Developer",
+              bio: mem.bio || "",
+              avatar: mem.avatar || "",
+              initials: mem.initials || getInitials(mem.name),
+              skills: mem.skills || ["JavaScript"],
+              followers: mem.followers || [],
+              following: mem.following || [],
+              stats: mem.stats || { followersCount: 0, followingCount: 0 },
+              isEmailVerified: true,
+              authProvider: "local",
+            });
+          } catch (e) {
+            console.warn("Could not upsert mem target to db in getFollowers:", e.message);
+          }
+        }
+      }
     } else {
       targetUser = inMemoryUsers.find(
         (u) =>
@@ -1293,6 +1429,36 @@ export const getFollowing = async (req, res) => {
           ],
         });
       }
+
+      if (!targetUser) {
+        const mem = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanHandle ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
+        );
+        if (mem) {
+          try {
+            targetUser = await User.create({
+              name: mem.name,
+              handle: cleanHandle,
+              email: mem.email || `${rawHandle}@projectbuddy.dev`,
+              password: "$2a$10$abcdefghijklmnopqrstuvwxyz1234567890",
+              role: mem.role || "Developer",
+              bio: mem.bio || "",
+              avatar: mem.avatar || "",
+              initials: mem.initials || getInitials(mem.name),
+              skills: mem.skills || ["JavaScript"],
+              followers: mem.followers || [],
+              following: mem.following || [],
+              stats: mem.stats || { followersCount: 0, followingCount: 0 },
+              isEmailVerified: true,
+              authProvider: "local",
+            });
+          } catch (e) {
+            console.warn("Could not upsert mem target to db in getFollowing:", e.message);
+          }
+        }
+      }
     } else {
       targetUser = inMemoryUsers.find(
         (u) =>
@@ -1331,7 +1497,14 @@ export const getFollowing = async (req, res) => {
         );
       }
       if (fUser) {
-        results.push(formatUserResponse(fUser, null, currentViewerHandle));
+        const formatted = formatUserResponse(fUser, null, currentViewerHandle);
+        // If current viewer is inspecting their own following list, isFollowing is guaranteed true
+        if (currentViewerHandle && formatHandle(currentViewerHandle) === cleanHandle) {
+          formatted.isFollowing = true;
+        } else if (!currentViewerHandle) {
+          formatted.isFollowing = true;
+        }
+        results.push(formatted);
       } else {
         results.push({
           id: `fg-${rawH}`,

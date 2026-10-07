@@ -83,11 +83,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        if (Array.isArray(parsed.following) && parsed.following.length > 0) {
+          setFollowedHandles(parsed.following);
+        }
         // Verify/refresh user from backend
         api.getMe(storedToken).then((freshUser) => {
           if (freshUser) {
             setUser(freshUser);
+            if (Array.isArray(freshUser.following)) {
+              setFollowedHandles(freshUser.following);
+              localStorage.setItem("projectbuddy_following", JSON.stringify(freshUser.following));
+            }
             localStorage.setItem("projectbuddy_user", JSON.stringify(freshUser));
           }
         }).catch(() => {
@@ -101,11 +109,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Ensure followedHandles stays in sync when user object changes
+  useEffect(() => {
+    if (user?.following && Array.isArray(user.following)) {
+      setFollowedHandles(user.following);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("projectbuddy_following", JSON.stringify(user.following));
+      }
+    }
+  }, [user?.following]);
+
   const login = async (payload: LoginPayload) => {
     const res = await api.login(payload);
     if (res.user && res.token) {
       setUser(res.user);
       setToken(res.token);
+      if (Array.isArray(res.user.following)) {
+        setFollowedHandles(res.user.following);
+        localStorage.setItem("projectbuddy_following", JSON.stringify(res.user.following));
+      }
       localStorage.setItem("projectbuddy_token", res.token);
       localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
       setAuthModalOpen(false);
@@ -118,6 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.user && res.token) {
       setUser(res.user);
       setToken(res.token);
+      if (Array.isArray(res.user.following)) {
+        setFollowedHandles(res.user.following);
+        localStorage.setItem("projectbuddy_following", JSON.stringify(res.user.following));
+      }
       localStorage.setItem("projectbuddy_token", res.token);
       localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
       setAuthModalOpen(false);
@@ -274,6 +300,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         followerHandle: user?.handle || "@pranjal",
         followerName: user?.name || "Pranjal Shukla",
       });
+
+      if (res.currentUser) {
+        setUser(res.currentUser);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("projectbuddy_user", JSON.stringify(res.currentUser));
+        }
+      }
+      if (Array.isArray(res.following)) {
+        setFollowedHandles(res.following);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("projectbuddy_following", JSON.stringify(res.following));
+        }
+      }
+
       return { isFollowing: res.isFollowing, followersCount: res.followersCount };
     } catch {
       // Offline fallback succeeded locally

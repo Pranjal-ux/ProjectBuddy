@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB, getDbStatus } from "./config/db.js";
+import { seedDatabase } from "./utils/seedData.js";
 import joinRequestRoutes from "./routes/joinRequestRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -86,6 +87,7 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   // Attempt MongoDB connection
   await connectDB();
+  await seedDatabase();
 
   app.listen(PORT, () => {
     console.log(`\n======================================================`);
