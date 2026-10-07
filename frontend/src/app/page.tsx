@@ -65,6 +65,40 @@ function HomeContent() {
     (typeof suggestedProjects)[0] | null
   >(null);
 
+  // Inspected User (null = current user's profile)
+  const [inspectedUser, setInspectedUser] = useState<any | null>(null);
+
+  const handleTabChange = (tab: string) => {
+    if (tab === "profile") {
+      setInspectedUser(null);
+    }
+    setActiveTab(tab);
+  };
+
+  const handleOpenUserProfile = (author: {
+    handle: string;
+    name?: string;
+    avatar?: string;
+    role?: string;
+    fallback?: string;
+  }) => {
+    if (user?.handle && author.handle.toLowerCase() === user.handle.toLowerCase()) {
+      setInspectedUser(null);
+    } else {
+      setInspectedUser({
+        handle: author.handle,
+        name: author.name || author.handle.replace("@", ""),
+        avatar: author.avatar || "",
+        role: author.role || "Developer",
+        initials: author.fallback || (author.name || "DV").slice(0, 2).toUpperCase(),
+      });
+    }
+    setActiveTab("profile");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   // Apply theme to html data-theme
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -129,7 +163,7 @@ function HomeContent() {
       {/* 1. Left Sticky Navigation Sidebar */}
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         openCreateModal={() => setCreateModalOpen(true)}
       />
 
@@ -212,6 +246,7 @@ function HomeContent() {
                     onRequestJoin={handleRequestJoin}
                     onTagClick={(tag) => setSearchQuery(tag)}
                     onPostUpdate={handlePostUpdate}
+                    onAuthorClick={handleOpenUserProfile}
                   />
                 ))
               )}
@@ -226,6 +261,7 @@ function HomeContent() {
             onQuickViewProject={handleQuickViewProject}
             openCreateModal={() => setCreateModalOpen(true)}
             onNavigateToTab={(tab: string) => setActiveTab(tab)}
+            onSelectUser={handleOpenUserProfile}
           />
         )}
 
@@ -233,13 +269,19 @@ function HomeContent() {
 
         {activeTab === "activity" && <ActivityView />}
 
-        {activeTab === "profile" && <ProfileView />}
+        {activeTab === "profile" && (
+          <ProfileView
+            initialInspectedUser={inspectedUser}
+            onBackToMyProfile={() => setInspectedUser(null)}
+          />
+        )}
 
         {activeTab === "bookmarks" && (
           <BookmarksView
             posts={posts}
             onRequestJoin={handleRequestJoin}
             onPostUpdate={handlePostUpdate}
+            onAuthorClick={handleOpenUserProfile}
           />
         )}
 
@@ -289,6 +331,7 @@ function HomeContent() {
           setActiveTab("home");
         }}
         onQuickViewProject={handleQuickViewProject}
+        onSelectUser={handleOpenUserProfile}
       />
 
       {/* Modals */}

@@ -617,16 +617,27 @@ export const addComment = async (req, res) => {
       });
     }
 
-    let handle = req.user?.handle || req.body.handle || "@developer";
+    let author = "Developer";
+    let handle = "@developer";
+    let avatar = "";
+
+    if (req.body.author && typeof req.body.author === "object") {
+      author = req.body.author.name || req.body.author.author || req.user?.name || "Developer";
+      handle = req.body.author.handle || req.user?.handle || "@developer";
+      avatar = req.body.author.avatar || req.user?.avatar || "";
+    } else {
+      author = req.body.name || req.user?.name || (typeof req.body.author === "string" ? req.body.author : "Developer");
+      handle = req.user?.handle || req.body.handle || "@developer";
+      avatar = req.user?.avatar || req.body.avatar || "";
+    }
+
     if (!handle.startsWith("@")) handle = `@${handle}`;
-    const author = req.user?.name || req.body.author || "Developer";
-    const avatar = req.user?.avatar || req.body.avatar || "";
 
     const newComment = {
       id: `c-${Date.now()}`,
-      author,
-      handle,
-      avatar,
+      author: String(author).trim() || "Developer",
+      handle: String(handle).trim() || "@developer",
+      avatar: String(avatar || ""),
       text: text.trim(),
       time: "Just now",
       createdAt: new Date(),
@@ -799,6 +810,51 @@ export const recordShare = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to record share",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc Get a single post by id or customId
+ * @route GET /api/posts/:id
+ */
+export const getPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userHandle = req.user?.handle || req.query.handle;
+
+    if (isDbReady()) {
+      const post = await findPostById(id);
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found",
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        post: formatPost(post, userHandle),
+      });
+    }
+
+    const post = fallbackPosts.find((p) => p.id === id || p.customId === id || p._id === id);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      post: formatPost(post, userHandle),
+    });
+  } catch (error) {
+    console.error("Error in getPostById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch post",
       error: error.message,
     });
   }

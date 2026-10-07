@@ -95,10 +95,10 @@ const calculateUserStats = async (user) => {
 
       const followersCount = Array.isArray(user.followers)
         ? user.followers.length
-        : user.stats?.followersCount || 142;
+        : (user.stats?.followersCount ?? 0);
       const followingCount = Array.isArray(user.following)
         ? user.following.length
-        : user.stats?.followingCount || 89;
+        : (user.stats?.followingCount ?? 0);
 
       return {
         activeProjectsCount,
@@ -125,10 +125,10 @@ const calculateUserStats = async (user) => {
   const skillsCount = Array.isArray(user.skills) ? user.skills.length : 9;
   const followersCount = Array.isArray(user.followers)
     ? user.followers.length
-    : user.stats?.followersCount || 142;
+    : (user.stats?.followersCount ?? 0);
   const followingCount = Array.isArray(user.following)
     ? user.following.length
-    : user.stats?.followingCount || 89;
+    : (user.stats?.followingCount ?? 0);
 
   return {
     activeProjectsCount,
@@ -146,10 +146,12 @@ const calculateUserStats = async (user) => {
  */
 const formatUserResponse = (user, stats, currentViewerHandle) => {
   const id = user._id ? user._id.toString() : user.id;
-  const followers = user.followers || [];
-  const following = user.following || [];
+  const followers = Array.isArray(user.followers) ? user.followers : [];
+  const following = Array.isArray(user.following) ? user.following : [];
   const cleanViewer = currentViewerHandle ? formatHandle(currentViewerHandle) : null;
-  const isFollowing = cleanViewer ? followers.includes(cleanViewer) : false;
+  const isFollowing = cleanViewer
+    ? followers.some((f) => formatHandle(f) === cleanViewer)
+    : false;
 
   return {
     id,
@@ -181,8 +183,12 @@ const formatUserResponse = (user, stats, currentViewerHandle) => {
       teamsJoinedCount: stats?.teamsJoinedCount ?? user.stats?.teamsJoinedCount ?? 5,
       collaboratorsCount: stats?.collaboratorsCount ?? user.stats?.collaboratorsCount ?? 14,
       matchScore: stats?.matchScore ?? user.stats?.matchScore ?? 98,
-      followersCount: stats?.followersCount ?? user.stats?.followersCount ?? (followers.length || 142),
-      followingCount: stats?.followingCount ?? user.stats?.followingCount ?? (following.length || 89),
+      followersCount:
+        stats?.followersCount ??
+        (Array.isArray(user.followers) ? user.followers.length : (user.stats?.followersCount ?? 0)),
+      followingCount:
+        stats?.followingCount ??
+        (Array.isArray(user.following) ? user.following.length : (user.stats?.followingCount ?? 0)),
     },
     isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : true,
     authProvider: user.authProvider || "local",
@@ -631,17 +637,29 @@ export const getUserStats = async (req, res) => {
     const { identifier } = req.params;
     const cleanHandle = formatHandle(identifier);
 
+    const rawHandle = identifier.replace(/^@/, "").toLowerCase();
+
     let user = null;
     if (isDbReady()) {
       if (mongoose.Types.ObjectId.isValid(identifier)) {
         user = await User.findById(identifier);
       }
       if (!user) {
-        user = await User.findOne({ handle: cleanHandle });
+        user = await User.findOne({
+          $or: [
+            { handle: cleanHandle },
+            { handle: `@${rawHandle}` },
+            { handle: rawHandle },
+          ],
+        });
       }
     } else {
       user = inMemoryUsers.find(
-        (u) => formatHandle(u.handle) === cleanHandle || u.id === identifier
+        (u) =>
+          formatHandle(u.handle) === cleanHandle ||
+          u.id === identifier ||
+          u._id === identifier ||
+          u.handle?.replace(/^@/, "").toLowerCase() === rawHandle
       );
     }
 
@@ -649,11 +667,13 @@ export const getUserStats = async (req, res) => {
       return res.status(200).json({
         success: true,
         stats: {
-          activeProjectsCount: 2,
-          teamsJoinedCount: 3,
-          collaboratorsCount: 6,
-          matchScore: 92,
-          skillsCount: 6,
+          activeProjectsCount: 0,
+          teamsJoinedCount: 0,
+          collaboratorsCount: 0,
+          matchScore: 85,
+          skillsCount: 0,
+          followersCount: 0,
+          followingCount: 0,
         },
       });
     }
@@ -938,7 +958,14 @@ export const toggleFollowUser = async (req, res) => {
       if (req.user?._id) {
         currentUser = await User.findById(req.user._id);
       } else {
-        currentUser = await User.findOne({ handle: currentHandle });
+        const rawCur = currentHandle.replace(/^@/, "").toLowerCase();
+        currentUser = await User.findOne({
+          $or: [
+            { handle: currentHandle },
+            { handle: `@${rawCur}` },
+            { handle: rawCur },
+          ],
+        });
       }
 
       if (!targetUser) {
@@ -953,16 +980,27 @@ export const toggleFollowUser = async (req, res) => {
         currentUser.following = [];
       }
 
-      const isFollowing = targetUser.followers.includes(currentHandle);
+      const isFollowing = targetUser.followers.some(
+        (h) => formatHandle(h) === currentHandle
+      );
 
       if (isFollowing) {
         // Unfollow
-        targetUser.followers = targetUser.followers.filter((h) => h !== currentHandle);
+        targetUser.followers = targetUser.followers.filter(
+          (h) => formatHandle(h) !== currentHandle
+        );
+        targetUser.stats = targetUser.stats || {};
+        targetUser.stats.followersCount = targetUser.followers.length;
+        await targetUser.save();
+
         if (currentUser) {
-          currentUser.following = currentUser.following.filter((h) => h !== cleanTargetHandle);
+          currentUser.following = (currentUser.following || []).filter(
+            (h) => formatHandle(h) !== cleanTargetHandle
+          );
+          currentUser.stats = currentUser.stats || {};
+          currentUser.stats.followingCount = currentUser.following.length;
           await currentUser.save();
         }
-        await targetUser.save();
 
         const stats = await calculateUserStats(targetUser);
         return res.status(200).json({
@@ -970,16 +1008,24 @@ export const toggleFollowUser = async (req, res) => {
           message: `Unfollowed ${targetUser.name}`,
           isFollowing: false,
           followersCount: targetUser.followers.length,
+          followingCount: currentUser ? currentUser.following.length : undefined,
           user: formatUserResponse(targetUser, stats, currentHandle),
         });
       } else {
         // Follow
         targetUser.followers.push(currentHandle);
+        targetUser.stats = targetUser.stats || {};
+        targetUser.stats.followersCount = targetUser.followers.length;
+        await targetUser.save();
+
         if (currentUser) {
-          currentUser.following.push(cleanTargetHandle);
+          if (!currentUser.following.some((h) => formatHandle(h) === cleanTargetHandle)) {
+            currentUser.following.push(cleanTargetHandle);
+          }
+          currentUser.stats = currentUser.stats || {};
+          currentUser.stats.followingCount = currentUser.following.length;
           await currentUser.save();
         }
-        await targetUser.save();
 
         // Create notification activity
         try {
@@ -1004,6 +1050,7 @@ export const toggleFollowUser = async (req, res) => {
           message: `Following ${targetUser.name}`,
           isFollowing: true,
           followersCount: targetUser.followers.length,
+          followingCount: currentUser ? currentUser.following.length : undefined,
           user: formatUserResponse(targetUser, stats, currentHandle),
         });
       }
@@ -1015,7 +1062,7 @@ export const toggleFollowUser = async (req, res) => {
         u.id === identifier ||
         u._id === identifier ||
         formatHandle(u.handle) === cleanTargetHandle ||
-        u.handle.replace(/^@/, "").toLowerCase() === rawTargetHandle
+        u.handle?.replace(/^@/, "").toLowerCase() === rawTargetHandle
     );
 
     if (!targetUser) {
@@ -1030,12 +1077,14 @@ export const toggleFollowUser = async (req, res) => {
         followers: [],
         following: [],
         skills: ["TypeScript", "React"],
-        stats: { followersCount: 1, followingCount: 0 },
+        stats: { followersCount: 0, followingCount: 0 },
       };
       inMemoryUsers.push(targetUser);
     }
 
-    let currentUser = inMemoryUsers.find((u) => formatHandle(u.handle) === currentHandle);
+    let currentUser = inMemoryUsers.find(
+      (u) => formatHandle(u.handle) === currentHandle
+    );
     if (!currentUser) {
       currentUser = {
         id: "usr-current",
@@ -1044,7 +1093,7 @@ export const toggleFollowUser = async (req, res) => {
         handle: currentHandle,
         followers: [],
         following: [],
-        stats: { followersCount: 142, followingCount: 89 },
+        stats: { followersCount: 0, followingCount: 0 },
       };
       inMemoryUsers.push(currentUser);
     }
@@ -1052,22 +1101,42 @@ export const toggleFollowUser = async (req, res) => {
     if (!Array.isArray(targetUser.followers)) targetUser.followers = [];
     if (!Array.isArray(currentUser.following)) currentUser.following = [];
 
-    const isFollowing = targetUser.followers.includes(currentHandle);
+    const isFollowing = targetUser.followers.some(
+      (h) => formatHandle(h) === currentHandle
+    );
 
     if (isFollowing) {
-      targetUser.followers = targetUser.followers.filter((h) => h !== currentHandle);
-      currentUser.following = currentUser.following.filter((h) => h !== cleanTargetHandle);
+      targetUser.followers = targetUser.followers.filter(
+        (h) => formatHandle(h) !== currentHandle
+      );
+      currentUser.following = currentUser.following.filter(
+        (h) => formatHandle(h) !== cleanTargetHandle
+      );
 
+      targetUser.stats = targetUser.stats || {};
+      targetUser.stats.followersCount = targetUser.followers.length;
+      currentUser.stats = currentUser.stats || {};
+      currentUser.stats.followingCount = currentUser.following.length;
+
+      const stats = await calculateUserStats(targetUser);
       return res.status(200).json({
         success: true,
         message: `Unfollowed ${targetUser.name}`,
         isFollowing: false,
         followersCount: targetUser.followers.length,
-        user: formatUserResponse(targetUser, null, currentHandle),
+        followingCount: currentUser.following.length,
+        user: formatUserResponse(targetUser, stats, currentHandle),
       });
     } else {
       targetUser.followers.push(currentHandle);
-      currentUser.following.push(cleanTargetHandle);
+      if (!currentUser.following.some((h) => formatHandle(h) === cleanTargetHandle)) {
+        currentUser.following.push(cleanTargetHandle);
+      }
+
+      targetUser.stats = targetUser.stats || {};
+      targetUser.stats.followersCount = targetUser.followers.length;
+      currentUser.stats = currentUser.stats || {};
+      currentUser.stats.followingCount = currentUser.following.length;
 
       inMemoryActivities.unshift({
         id: `act-${Date.now()}`,
@@ -1084,12 +1153,14 @@ export const toggleFollowUser = async (req, res) => {
         createdAt: new Date().toISOString(),
       });
 
+      const stats = await calculateUserStats(targetUser);
       return res.status(200).json({
         success: true,
         message: `Following ${targetUser.name}`,
         isFollowing: true,
         followersCount: targetUser.followers.length,
-        user: formatUserResponse(targetUser, null, currentHandle),
+        followingCount: currentUser.following.length,
+        user: formatUserResponse(targetUser, stats, currentHandle),
       });
     }
   } catch (error) {
@@ -1137,24 +1208,36 @@ export const getFollowers = async (req, res) => {
       );
     }
 
-    const followerHandles = targetUser?.followers?.length
-      ? targetUser.followers
-      : ["@schen", "@arivera", "@elena_codes", "@dmarcus"];
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: `User '${identifier}' not found`,
+        followers: [],
+      });
+    }
+
+    const followerHandles = Array.isArray(targetUser.followers) ? targetUser.followers : [];
 
     const results = [];
     for (const h of followerHandles) {
       const cleanH = formatHandle(h);
+      const rawH = cleanH.replace(/^@/, "");
       let fUser = null;
       if (isDbReady()) {
-        fUser = await User.findOne({ handle: cleanH });
+        fUser = await User.findOne({
+          $or: [{ handle: cleanH }, { handle: `@${rawH}` }, { handle: rawH }],
+        });
       }
       if (!fUser) {
-        fUser = inMemoryUsers.find((u) => formatHandle(u.handle) === cleanH);
+        fUser = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanH ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawH
+        );
       }
       if (fUser) {
         results.push(formatUserResponse(fUser, null, currentViewerHandle));
       } else {
-        const rawH = cleanH.replace(/^@/, "");
         results.push({
           id: `f-${rawH}`,
           _id: `f-${rawH}`,
@@ -1165,7 +1248,7 @@ export const getFollowers = async (req, res) => {
           avatar: "",
           skills: ["TypeScript", "React"],
           isFollowing: currentViewerHandle ? cleanH === formatHandle(currentViewerHandle) : false,
-          stats: { followersCount: 45, followingCount: 30, activeProjectsCount: 1, matchScore: 92 },
+          stats: { followersCount: 0, followingCount: 0, activeProjectsCount: 1, matchScore: 90 },
         });
       }
     }
@@ -1220,24 +1303,36 @@ export const getFollowing = async (req, res) => {
       );
     }
 
-    const followingHandles = targetUser?.following?.length
-      ? targetUser.following
-      : ["@schen", "@arivera"];
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: `User '${identifier}' not found`,
+        following: [],
+      });
+    }
+
+    const followingHandles = Array.isArray(targetUser.following) ? targetUser.following : [];
 
     const results = [];
     for (const h of followingHandles) {
       const cleanH = formatHandle(h);
+      const rawH = cleanH.replace(/^@/, "");
       let fUser = null;
       if (isDbReady()) {
-        fUser = await User.findOne({ handle: cleanH });
+        fUser = await User.findOne({
+          $or: [{ handle: cleanH }, { handle: `@${rawH}` }, { handle: rawH }],
+        });
       }
       if (!fUser) {
-        fUser = inMemoryUsers.find((u) => formatHandle(u.handle) === cleanH);
+        fUser = inMemoryUsers.find(
+          (u) =>
+            formatHandle(u.handle) === cleanH ||
+            u.handle?.replace(/^@/, "").toLowerCase() === rawH
+        );
       }
       if (fUser) {
         results.push(formatUserResponse(fUser, null, currentViewerHandle));
       } else {
-        const rawH = cleanH.replace(/^@/, "");
         results.push({
           id: `fg-${rawH}`,
           _id: `fg-${rawH}`,
@@ -1248,7 +1343,7 @@ export const getFollowing = async (req, res) => {
           avatar: "",
           skills: ["TypeScript", "Next.js"],
           isFollowing: true,
-          stats: { followersCount: 88, followingCount: 42, activeProjectsCount: 2, matchScore: 94 },
+          stats: { followersCount: 0, followingCount: 0, activeProjectsCount: 1, matchScore: 90 },
         });
       }
     }

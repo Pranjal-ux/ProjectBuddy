@@ -4,7 +4,7 @@ Modular REST API service built with **Node.js**, **Express.js**, and **MongoDB**
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Install dependencies
 ```bash

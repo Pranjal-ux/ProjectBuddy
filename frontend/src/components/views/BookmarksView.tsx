@@ -12,6 +12,13 @@ interface BookmarksViewProps {
   posts?: Post[];
   onRequestJoin: (post: Post) => void;
   onPostUpdate?: (post: Post) => void;
+  onAuthorClick?: (author: {
+    handle: string;
+    name?: string;
+    avatar?: string;
+    fallback?: string;
+    role?: string;
+  }) => void;
 }
 
 type BookmarkFilter = "all" | "project" | "telemetry" | "code";
@@ -20,6 +27,7 @@ export function BookmarksView({
   posts,
   onRequestJoin,
   onPostUpdate,
+  onAuthorClick,
 }: BookmarksViewProps) {
   const { user } = useAuth();
   const [filter, setFilter] = useState<BookmarkFilter>("all");
@@ -193,6 +201,7 @@ export function BookmarksView({
               onRequestJoin={onRequestJoin}
               onBookmarkToggle={handleBookmarkToggle}
               onPostUpdate={handleLocalPostUpdate}
+              onAuthorClick={onAuthorClick}
             />
           ))}
         </div>

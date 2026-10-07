@@ -57,6 +57,11 @@ export function ProfileView({
   const [inspectedUser, setInspectedUser] = useState<UserType | null>(initialInspectedUser);
   const [isPreviewPublic, setIsPreviewPublic] = useState(false);
 
+  // Sync inspectedUser when parent passes or changes initialInspectedUser
+  useEffect(() => {
+    setInspectedUser(initialInspectedUser);
+  }, [initialInspectedUser]);
+
   // Determine active profile being displayed
   const activeUser = inspectedUser || myUser;
   const isOwnProfile = !inspectedUser && !isPreviewPublic;
@@ -72,12 +77,12 @@ export function ProfileView({
 
   // Follow & profile stats state
   const [stats, setStats] = useState({
-    activeProjectsCount: activeUser?.stats?.activeProjectsCount || 3,
-    teamsJoinedCount: activeUser?.stats?.teamsJoinedCount || 5,
-    collaboratorsCount: activeUser?.stats?.collaboratorsCount || 14,
-    matchScore: activeUser?.stats?.matchScore || 98,
-    followersCount: activeUser?.stats?.followersCount || 142,
-    followingCount: activeUser?.stats?.followingCount || 89,
+    activeProjectsCount: activeUser?.stats?.activeProjectsCount ?? 3,
+    teamsJoinedCount: activeUser?.stats?.teamsJoinedCount ?? 5,
+    collaboratorsCount: activeUser?.stats?.collaboratorsCount ?? 14,
+    matchScore: activeUser?.stats?.matchScore ?? 98,
+    followersCount: activeUser?.stats?.followersCount ?? (activeUser?.followers?.length ?? 0),
+    followingCount: activeUser?.stats?.followingCount ?? (activeUser?.following?.length ?? 0),
   });
 
   // Re-sync stats when activeUser changes
@@ -88,8 +93,8 @@ export function ProfileView({
         teamsJoinedCount: activeUser.stats.teamsJoinedCount ?? 5,
         collaboratorsCount: activeUser.stats.collaboratorsCount ?? 14,
         matchScore: activeUser.stats.matchScore ?? 98,
-        followersCount: activeUser.stats.followersCount ?? 142,
-        followingCount: activeUser.stats.followingCount ?? 89,
+        followersCount: activeUser.stats.followersCount ?? (activeUser.followers?.length ?? 0),
+        followingCount: activeUser.stats.followingCount ?? (activeUser.following?.length ?? 0),
       });
     }
   }, [activeUser]);
@@ -97,6 +102,17 @@ export function ProfileView({
   // Fetch live stats & projects for active user from backend
   useEffect(() => {
     if (activeUser?.handle) {
+      if (inspectedUser?.handle) {
+        api
+          .getUserProfile(inspectedUser.handle)
+          .then((fresh) => {
+            if (fresh) {
+              setInspectedUser(fresh);
+            }
+          })
+          .catch(() => {});
+      }
+
       api
         .getUserStats(activeUser.handle)
         .then((freshStats) => {
@@ -156,13 +172,16 @@ export function ProfileView({
       id: activeUser.id || activeUser._id,
     });
 
-    // Update followers count optimistically on active profile card
+    // Update followers count on active profile card
     setStats((prev) => ({
       ...prev,
-      followersCount: Math.max(
-        0,
-        res.isFollowing ? prev.followersCount + 1 : prev.followersCount - 1
-      ),
+      followersCount:
+        typeof res.followersCount === "number"
+          ? res.followersCount
+          : Math.max(
+              0,
+              res.isFollowing ? prev.followersCount + 1 : prev.followersCount - 1
+            ),
     }));
   };
 
@@ -791,6 +810,35 @@ export function ProfileView({
           ))}
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUser={myUser}
+        onSaveProfile={handleSaveProfile}
+      />
+
+      {/* Edit Photo Modal */}
+      <EditPhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        currentPhoto={myUser?.avatar}
+        initials={myUser?.initials || "DEV"}
+        userName={myUser?.name || "Developer"}
+        onSavePhoto={handleSavePhoto}
+      />
+
+      {/* Follow List Modal (Followers & Following) */}
+      <FollowListModal
+        isOpen={isFollowModalOpen}
+        onClose={() => setIsFollowModalOpen(false)}
+        initialTab={followModalTab}
+        targetUser={activeUser}
+        onSelectUser={(selectedDev) => {
+          setInspectedUser(selectedDev);
+        }}
+      />
     </div>
   );
 }

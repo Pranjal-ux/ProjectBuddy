@@ -52,8 +52,8 @@ const defaultUser: User = {
     teamsJoinedCount: 5,
     collaboratorsCount: 14,
     matchScore: 98,
-    followersCount: 142,
-    followingCount: 89,
+    followersCount: 4,
+    followingCount: 2,
   },
 };
 

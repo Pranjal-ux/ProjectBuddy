@@ -6,6 +6,7 @@ import { suggestedProjects, suggestedPeople } from "@/data/mockData";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
 import { useAuth } from "@/context/AuthContext";
 
 interface RightSidebarProps {
@@ -13,6 +14,13 @@ interface RightSidebarProps {
   setSearchQuery: (query: string) => void;
   onSelectTag?: (tag: string) => void;
   onQuickViewProject?: (project: (typeof suggestedProjects)[0]) => void;
+  onSelectUser?: (user: {
+    handle: string;
+    name?: string;
+    avatar?: string;
+    role?: string;
+    fallback?: string;
+  }) => void;
 }
 
 export function RightSidebar({
@@ -20,6 +28,7 @@ export function RightSidebar({
   setSearchQuery,
   onSelectTag,
   onQuickViewProject,
+  onSelectUser,
 }: RightSidebarProps) {
   const { isFollowing, toggleFollowUser } = useAuth();
 
@@ -119,7 +128,19 @@ export function RightSidebar({
                 key={person.id}
                 className="p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between gap-2"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-85 transition-opacity"
+                  onClick={() =>
+                    onSelectUser?.({
+                      handle: person.handle,
+                      name: person.name,
+                      avatar: person.avatar,
+                      role: person.role,
+                      fallback: person.initials,
+                    })
+                  }
+                  title={`View ${person.name}'s profile`}
+                >
                   <Avatar
                     src={person.avatar}
                     fallback={person.initials}
@@ -127,7 +148,7 @@ export function RightSidebar({
                     className="ring-1 ring-[var(--border-subtle)]"
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-white truncate">
+                    <span className="text-xs font-semibold text-white truncate hover:underline">
                       {person.name}
                     </span>
                     <span className="text-[11px] text-[var(--text-secondary)] truncate">
@@ -195,11 +216,7 @@ export function RightSidebar({
       {/* Footer Info */}
       <div className="mt-auto pt-4 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <img
-            src="/projectbuddy-logo.png"
-            alt="ProjectBuddy"
-            className="h-6 w-auto object-contain opacity-90"
-          />
+          <ProjectBuddyLogo variant="full" size="xs" />
         </div>
         <div className="flex gap-3">
           <a href="#" className="hover:text-[var(--text-secondary)]">About</a>

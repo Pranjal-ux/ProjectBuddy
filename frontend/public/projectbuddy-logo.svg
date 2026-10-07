@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="pb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+    <linearGradient id="pb-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.5" />
+    </linearGradient>
+    <linearGradient id="pb-p-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="pb-b-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <filter id="pb-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <radialGradient id="pb-nexus" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Squircle Base Container -->
+  <rect x="4" y="4" width="92" height="92" rx="24" fill="url(#pb-bg)" stroke="url(#pb-border)" stroke-width="2" />
+
+  <!-- Subtle Inner Glass Grid / Radial Aura -->
+  <circle cx="50" cy="50" r="32" fill="url(#pb-nexus)" opacity="0.12" />
+
+  <!-- Collaborative Mark: Interlocking P & B with Node Synergy -->
+  <g filter="url(#pb-glow)">
+    <!-- Stem & P Loop (Left Wing / Creator) -->
+    <path
+      d="M32 72V28C32 24.6863 34.6863 22 38 22H48C56.8366 22 64 29.1634 64 38C64 46.8366 56.8366 54 48 54H32"
+      stroke="url(#pb-p-grad)"
+      stroke-width="7.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- B Loop (Right Wing / Partner Synergy) -->
+    <path
+      d="M48 54H54C62.8366 54 70 61.1634 70 70C70 74.4183 66.4183 78 62 78H38"
+      stroke="url(#pb-b-grad)"
+      stroke-width="7.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <!-- Center Synergy Connector Node -->
+    <circle cx="48" cy="54" r="5" fill="#38bdf8" />
+    <circle cx="48" cy="54" r="2.5" fill="#ffffff" />
+  </g>
+
+  <!-- Small Code Accent (Angle brackets subtly etched at top right and bottom left) -->
+  <path d="M22 45L16 50L22 55" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+  <path d="M78 45L84 50L78 55" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />
+</svg>

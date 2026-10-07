@@ -288,7 +288,7 @@ export const api = {
   async getUserProfile(identifier: string): Promise<User> {
     const res = await fetch(
       `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: getAuthHeaders() }
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -377,7 +377,7 @@ export const api = {
     const url = viewerHandle
       ? `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/followers?viewerHandle=${encodeURIComponent(viewerHandle)}`
       : `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/followers`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", headers: getAuthHeaders() });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.message || "Failed to fetch followers");
@@ -390,7 +390,7 @@ export const api = {
     const url = viewerHandle
       ? `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/following?viewerHandle=${encodeURIComponent(viewerHandle)}`
       : `${API_BASE_URL}/profile/${encodeURIComponent(identifier)}/following`;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", headers: getAuthHeaders() });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.message || "Failed to fetch following list");

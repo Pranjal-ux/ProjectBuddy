@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   Heart,
   MessageSquare,
-  Repeat2,
   Bookmark,
   Share2,
   Users,
@@ -27,6 +26,13 @@ interface PostCardProps {
   onTagClick?: (tag: string) => void;
   onBookmarkToggle?: (postId: string, bookmarked: boolean) => void;
   onPostUpdate?: (updatedPost: Post) => void;
+  onAuthorClick?: (author: {
+    handle: string;
+    name?: string;
+    avatar?: string;
+    fallback?: string;
+    role?: string;
+  }) => void;
 }
 
 export function PostCard({
@@ -35,6 +41,7 @@ export function PostCard({
   onTagClick,
   onBookmarkToggle,
   onPostUpdate,
+  onAuthorClick,
 }: PostCardProps) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(post.userLiked || false);
@@ -42,8 +49,6 @@ export function PostCard({
   const [bookmarked, setBookmarked] = useState(post.userBookmarked || false);
   const [bookmarksCount, setBookmarksCount] = useState(post.stats.bookmarks || 0);
   const [sharesCount, setSharesCount] = useState(post.stats.shares || 0);
-  const [reposted, setReposted] = useState(false);
-  const [repostsCount, setRepostsCount] = useState(post.stats.reposts || 0);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(post.commentsList || []);
   const [newComment, setNewComment] = useState("");
@@ -83,22 +88,19 @@ export function PostCard({
       if (res.success) {
         setLiked(res.liked);
         setLikesCount(res.likesCount);
-        if (onPostUpdate && res.post) {
-          onPostUpdate(res.post);
+        if (onPostUpdate) {
+          onPostUpdate({
+            ...post,
+            userLiked: res.liked,
+            stats: {
+              ...post.stats,
+              likes: res.likesCount,
+            },
+          });
         }
       }
     } catch (err) {
       console.warn("Failed to toggle like on backend:", err);
-    }
-  };
-
-  const toggleRepost = () => {
-    if (reposted) {
-      setReposted(false);
-      setRepostsCount((prev) => Math.max(0, prev - 1));
-    } else {
-      setReposted(true);
-      setRepostsCount((prev) => prev + 1);
     }
   };
 
@@ -146,8 +148,18 @@ export function PostCard({
   };
 
   const handleShare = async () => {
-    // Increment share counter on backend
-    setSharesCount((prev) => prev + 1);
+    // Increment share counter on backend & notify parent
+    const nextShares = sharesCount + 1;
+    setSharesCount(nextShares);
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        stats: {
+          ...post.stats,
+          shares: nextShares,
+        },
+      });
+    }
     api.recordShare(post.id).catch((e) => console.warn("Share count record failed:", e));
 
     const shareUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -185,9 +197,21 @@ export function PostCard({
       time: "Just now",
     };
 
-    setComments((prev) => [...prev, optimisticComment]);
+    const nextComments = [...comments, optimisticComment];
+    setComments(nextComments);
     setNewComment("");
     setIsSubmittingComment(true);
+
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        commentsList: nextComments,
+        stats: {
+          ...post.stats,
+          comments: nextComments.length,
+        },
+      });
+    }
 
     try {
       const res = await api.addComment(post.id, commentText, {
@@ -198,6 +222,16 @@ export function PostCard({
 
       if (res.success && res.commentsList) {
         setComments(res.commentsList);
+        if (onPostUpdate) {
+          onPostUpdate({
+            ...post,
+            commentsList: res.commentsList,
+            stats: {
+              ...post.stats,
+              comments: res.commentsList.length,
+            },
+          });
+        }
       }
     } catch (err) {
       console.warn("Failed to add comment on backend:", err);
@@ -210,19 +244,45 @@ export function PostCard({
     <article className="p-3.5 sm:p-5 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)] hover:bg-[var(--bg-surface-low)] transition-all">
       <div className="flex gap-2.5 sm:gap-3.5">
         {/* Author Avatar */}
-        <Avatar
-          src={post.author.avatarUrl}
-          fallback={post.author.fallback}
-          size="md"
-          className="mt-0.5 shrink-0"
-        />
+        <div
+          onClick={() =>
+            onAuthorClick?.({
+              handle: post.author.handle,
+              name: post.author.name,
+              avatar: post.author.avatarUrl,
+              fallback: post.author.fallback,
+              role: post.author.role,
+            })
+          }
+          className="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+          title={`View ${post.author.name}'s profile`}
+        >
+          <Avatar
+            src={post.author.avatarUrl}
+            fallback={post.author.fallback}
+            size="md"
+            className="mt-0.5"
+          />
+        </div>
 
         {/* Post Main Body */}
         <div className="flex-1 flex flex-col gap-2 min-w-0">
           {/* Header Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <span className="font-semibold text-sm text-white hover:underline cursor-pointer">
+              <span
+                onClick={() =>
+                  onAuthorClick?.({
+                    handle: post.author.handle,
+                    name: post.author.name,
+                    avatar: post.author.avatarUrl,
+                    fallback: post.author.fallback,
+                    role: post.author.role,
+                  })
+                }
+                className="font-semibold text-sm text-white hover:underline cursor-pointer"
+                title={`View ${post.author.name}'s profile`}
+              >
                 {post.author.name}
               </span>
               {post.author.verified && (
@@ -230,7 +290,19 @@ export function PostCard({
                   ✓
                 </span>
               )}
-              <span className="text-xs font-mono text-[var(--text-muted)]">
+              <span
+                onClick={() =>
+                  onAuthorClick?.({
+                    handle: post.author.handle,
+                    name: post.author.name,
+                    avatar: post.author.avatarUrl,
+                    fallback: post.author.fallback,
+                    role: post.author.role,
+                  })
+                }
+                className="text-xs font-mono text-[var(--text-muted)] hover:text-white cursor-pointer transition-colors"
+                title={`View ${post.author.name}'s profile`}
+              >
                 {post.author.handle}
               </span>
               <span className="text-[var(--text-muted)] text-xs">·</span>
@@ -388,19 +460,6 @@ export function PostCard({
               <span>{comments.length}</span>
             </button>
 
-            {/* Repost */}
-            <button
-              onClick={toggleRepost}
-              className={cn(
-                "flex items-center gap-1.5 hover:text-white transition-colors group cursor-pointer",
-                reposted && "text-white font-semibold"
-              )}
-              title="Repost"
-            >
-              <Repeat2 className="size-4 group-hover:scale-110 transition-transform" />
-              <span>{repostsCount}</span>
-            </button>
-
             {/* Like button */}
             <button
               onClick={toggleLike}
@@ -467,18 +526,50 @@ export function PostCard({
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="flex gap-2.5 text-xs">
-                    <Avatar
-                      src={comment.avatar}
-                      fallback={(comment.author || "U").slice(0, 2).toUpperCase()}
-                      size="sm"
-                    />
+                    <div
+                      onClick={() =>
+                        onAuthorClick?.({
+                          handle: comment.handle,
+                          name: comment.author,
+                          avatar: comment.avatar,
+                        })
+                      }
+                      className="shrink-0 cursor-pointer hover:opacity-85 transition-opacity"
+                      title={`View ${comment.author}'s profile`}
+                    >
+                      <Avatar
+                        src={comment.avatar}
+                        fallback={(comment.author || "U").slice(0, 2).toUpperCase()}
+                        size="sm"
+                      />
+                    </div>
                     <div className="flex-1 bg-[var(--bg-surface-container)] p-2.5 rounded-lg border border-[var(--border-subtle)]">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-white">
+                          <span
+                            onClick={() =>
+                              onAuthorClick?.({
+                                handle: comment.handle,
+                                name: comment.author,
+                                avatar: comment.avatar,
+                              })
+                            }
+                            className="font-semibold text-white hover:underline cursor-pointer"
+                            title={`View ${comment.author}'s profile`}
+                          >
                             {comment.author}
                           </span>
-                          <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                          <span
+                            onClick={() =>
+                              onAuthorClick?.({
+                                handle: comment.handle,
+                                name: comment.author,
+                                avatar: comment.avatar,
+                              })
+                            }
+                            className="text-[11px] font-mono text-[var(--text-muted)] hover:text-white cursor-pointer transition-colors"
+                            title={`View ${comment.author}'s profile`}
+                          >
                             {comment.handle}
                           </span>
                         </div>

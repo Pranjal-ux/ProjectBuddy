@@ -49,6 +49,13 @@ interface DiscoverViewProps {
   onQuickViewProject?: (project: (typeof suggestedProjects)[0]) => void;
   openCreateModal?: () => void;
   onNavigateToTab?: (tab: string) => void;
+  onSelectUser?: (user: {
+    handle: string;
+    name?: string;
+    avatar?: string;
+    role?: string;
+    fallback?: string;
+  }) => void;
 }
 
 interface NormalizedProject {
@@ -112,6 +119,7 @@ export function DiscoverView({
   onQuickViewProject,
   openCreateModal,
   onNavigateToTab,
+  onSelectUser,
 }: DiscoverViewProps) {
   const { user, isFollowing, toggleFollowUser } = useAuth();
 
@@ -994,7 +1002,19 @@ export function DiscoverView({
                   <div className="flex flex-col gap-3">
                     {/* Header: Author + Synergy Badge */}
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
+                      <div
+                        className="flex items-center gap-2.5 cursor-pointer hover:opacity-85 transition-opacity"
+                        onClick={() =>
+                          onSelectUser?.({
+                            handle: proj.author.handle,
+                            name: proj.author.name,
+                            avatar: proj.author.avatarUrl,
+                            role: proj.author.role,
+                            fallback: proj.author.fallback,
+                          })
+                        }
+                        title={`View ${proj.author.name}'s profile`}
+                      >
                         <Avatar
                           src={proj.author.avatarUrl}
                           fallback={proj.author.fallback}
@@ -1002,14 +1022,14 @@ export function DiscoverView({
                         />
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-semibold text-white truncate max-w-[140px]">
+                            <span className="text-xs font-semibold text-white truncate max-w-[140px] hover:underline">
                               {proj.author.name}
                             </span>
                             {proj.author.verified && (
                               <CheckCircle2 className="size-3 text-cyan-400 shrink-0" />
                             )}
                           </div>
-                          <span className="text-[11px] font-mono text-[var(--text-muted)] truncate">
+                          <span className="text-[11px] font-mono text-[var(--text-muted)] truncate hover:text-white transition-colors">
                             {proj.author.handle}
                           </span>
                         </div>
@@ -1189,7 +1209,19 @@ export function DiscoverView({
                   <div className="flex flex-col gap-3">
                     {/* Header: Avatar, Name, Availability, Synergy */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="flex items-center gap-3 min-w-0 cursor-pointer hover:opacity-85 transition-opacity"
+                        onClick={() =>
+                          onSelectUser?.({
+                            handle: dev.handle,
+                            name: dev.name,
+                            avatar: dev.avatar,
+                            role: dev.role,
+                            fallback: dev.initials,
+                          })
+                        }
+                        title={`View ${dev.name}'s profile`}
+                      >
                         <div className="relative">
                           <Avatar
                             src={dev.avatar}
@@ -1210,14 +1242,11 @@ export function DiscoverView({
 
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <h4
-                              onClick={() => setSelectedDeveloperForModal(dev)}
-                              className="text-sm font-bold text-white hover:text-zinc-300 transition-colors cursor-pointer truncate max-w-[130px]"
-                            >
+                            <h4 className="text-sm font-bold text-white hover:underline transition-colors truncate max-w-[130px]">
                               {dev.name}
                             </h4>
                           </div>
-                          <span className="text-[11px] font-mono text-[var(--text-muted)] truncate">
+                          <span className="text-[11px] font-mono text-[var(--text-muted)] truncate hover:text-white transition-colors">
                             {dev.handle}
                           </span>
                         </div>
@@ -1501,6 +1530,25 @@ export function DiscoverView({
                 onClick={() => setSelectedDeveloperForModal(null)}
               >
                 Close
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const dev = selectedDeveloperForModal;
+                  setSelectedDeveloperForModal(null);
+                  onSelectUser?.({
+                    handle: dev.handle,
+                    name: dev.name,
+                    avatar: dev.avatar,
+                    role: dev.role,
+                    fallback: dev.initials,
+                  });
+                }}
+                className="gap-1.5 cursor-pointer text-xs"
+              >
+                <span>View Full Profile</span>
+                <ArrowUpRight className="size-3.5" />
               </Button>
 
               {/* Follow Toggle */}

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getPosts,
+  getPostById,
   createPost,
   toggleLike,
   toggleBookmark,
@@ -16,6 +17,7 @@ const router = express.Router();
 router.get("/", optionalProtect, getPosts);
 router.post("/", optionalProtect, createPost);
 router.get("/bookmarks", optionalProtect, getBookmarks);
+router.get("/:id", optionalProtect, getPostById);
 
 router.post("/:id/like", optionalProtect, toggleLike);
 router.post("/:id/bookmark", optionalProtect, toggleBookmark);

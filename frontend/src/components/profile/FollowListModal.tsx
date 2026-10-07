@@ -65,48 +65,20 @@ export function FollowListModal({
         ]);
 
         if (isMounted) {
-          if (followersRes.status === "fulfilled" && followersRes.value.length > 0) {
-            setFollowersList(followersRes.value);
+          if (followersRes.status === "fulfilled") {
+            setFollowersList(followersRes.value || []);
           } else {
-            // Seed realistic followers from mock buddies
-            const defaultFollowers: UserType[] = suggestedPeople.slice(0, 4).map((p) => ({
-              id: p.id,
-              name: p.name,
-              handle: p.handle,
-              email: `${p.handle.replace(/^@/, "")}@projectbuddy.dev`,
-              role: p.role,
-              bio: p.bio,
-              avatar: p.avatar,
-              initials: p.initials,
-              skills: p.skills,
-              location: p.location,
-              stats: p.stats,
-            }));
-            setFollowersList(defaultFollowers);
+            setFollowersList([]);
           }
 
-          if (followingRes.status === "fulfilled" && followingRes.value.length > 0) {
-            setFollowingList(followingRes.value);
+          if (followingRes.status === "fulfilled") {
+            setFollowingList(followingRes.value || []);
           } else {
-            // Seed realistic following from mock buddies
-            const defaultFollowing: UserType[] = suggestedPeople.slice(1, 3).map((p) => ({
-              id: p.id,
-              name: p.name,
-              handle: p.handle,
-              email: `${p.handle.replace(/^@/, "")}@projectbuddy.dev`,
-              role: p.role,
-              bio: p.bio,
-              avatar: p.avatar,
-              initials: p.initials,
-              skills: p.skills,
-              location: p.location,
-              stats: p.stats,
-            }));
-            setFollowingList(defaultFollowing);
+            setFollowingList([]);
           }
         }
       } catch (err) {
-        console.warn("Could not load follow lists from API, using fallback data:", err);
+        console.warn("Could not load follow lists from API:", err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -123,11 +95,28 @@ export function FollowListModal({
     const handle = dev.handle;
     setTogglingHandles((prev) => new Set(prev).add(handle));
     try {
-      await toggleFollowUser({
+      const res = await toggleFollowUser({
         handle: dev.handle,
         name: dev.name,
         id: dev.id || dev._id,
       });
+
+      // Update follow status on the item across both lists
+      setFollowersList((prev) =>
+        prev.map((item) =>
+          item.handle?.toLowerCase() === handle.toLowerCase()
+            ? { ...item, isFollowing: res.isFollowing }
+            : item
+        )
+      );
+
+      setFollowingList((prev) =>
+        prev.map((item) =>
+          item.handle?.toLowerCase() === handle.toLowerCase()
+            ? { ...item, isFollowing: res.isFollowing }
+            : item
+        )
+      );
     } finally {
       setTogglingHandles((prev) => {
         const next = new Set(prev);
@@ -151,8 +140,8 @@ export function FollowListModal({
     );
   }, [currentList, searchQuery]);
 
-  const followersCount = targetUser?.stats?.followersCount ?? followersList.length;
-  const followingCount = targetUser?.stats?.followingCount ?? followingList.length;
+  const followersCount = followersList.length;
+  const followingCount = followingList.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
