@@ -62,7 +62,7 @@ const defaultUser: User = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(defaultUser);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -106,8 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem("projectbuddy_user", JSON.stringify(freshUser));
           }
         }).catch(() => {
-          // If token expired, clear or keep stored
+          // If token expired, clear
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("projectbuddy_token");
+          localStorage.removeItem("projectbuddy_user");
         });
+      } else {
+        setUser(null);
+        setToken(null);
       }
     } catch (err) {
       console.error("Failed to load auth state from localStorage:", err);
@@ -196,10 +203,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    setUser(defaultUser);
+    setUser(null);
     setToken(null);
     localStorage.removeItem("projectbuddy_token");
     localStorage.removeItem("projectbuddy_user");
+    localStorage.removeItem("projectbuddy_following");
   };
 
   const updateUserProfile = async (data: Partial<User>): Promise<boolean> => {
@@ -337,7 +345,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthModalOpen(false);
   };
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = Boolean(token && user);
 
   return (
     <AuthContext.Provider

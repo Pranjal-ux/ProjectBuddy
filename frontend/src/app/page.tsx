@@ -15,15 +15,16 @@ import { ActivityView } from "@/components/views/ActivityView";
 import { ProfileView } from "@/components/views/ProfileView";
 import { BookmarksView } from "@/components/views/BookmarksView";
 import { Post } from "@/data/mockData";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { AuthModal } from "@/components/modals/AuthModal";
+import { AuthView } from "@/components/views/AuthView";
 import { api } from "@/lib/api";
 
 function HomeContent() {
-  const { user, isFollowing } = useAuth();
+  const { user, isFollowing, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
   const [feedFilter, setFeedFilter] = useState<
     "for-you" | "following" | "open-teams" | "showcases"
@@ -35,6 +36,7 @@ function HomeContent() {
 
   // Fetch real-time posts from backend API
   useEffect(() => {
+    if (!isAuthenticated) return;
     let isMounted = true;
     const fetchFeedPosts = async () => {
       try {
@@ -53,7 +55,7 @@ function HomeContent() {
     return () => {
       isMounted = false;
     };
-  }, [user?.handle]);
+  }, [user?.handle, isAuthenticated]);
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -164,6 +166,24 @@ function HomeContent() {
     }
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4 text-white">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-xl shadow-indigo-500/30 animate-pulse">
+          <Sparkles className="w-7 h-7 text-white" />
+        </div>
+        <div className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
+          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+          <span>Loading ProjectBuddy...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthView />;
+  }
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors relative">
