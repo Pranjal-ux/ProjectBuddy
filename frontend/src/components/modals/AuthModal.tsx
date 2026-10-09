@@ -304,7 +304,19 @@ export function AuthModal() {
             if (err?.type === "popup_closed") {
               setError("Google sign-in was closed before completing.");
             } else if (err?.message) {
-              setError(`Google authentication failed: ${err.message}`);
+              if (
+                err.message.includes("Failed to open popup window") ||
+                err.message.toLowerCase().includes("popup")
+              ) {
+                setError(
+                  "Google popup was blocked or domain is pending in Google Cloud Console. Opening Google Sign-In Chooser..."
+                );
+                setTimeout(() => {
+                  setShowGoogleChooser(true);
+                }, 600);
+              } else {
+                setError(`Google authentication failed: ${err.message}`);
+              }
             }
           },
         });
@@ -348,7 +360,19 @@ export function AuthModal() {
             if (err?.type === "popup_closed") {
               setError("Google sign-in was closed before completing.");
             } else if (err?.message) {
-              setError(`Google authentication failed: ${err.message}`);
+              if (
+                err.message.includes("Failed to open popup window") ||
+                err.message.toLowerCase().includes("popup")
+              ) {
+                setError(
+                  "Google popup was blocked or domain is pending in Google Cloud Console. Opening Google Sign-In Chooser..."
+                );
+                setTimeout(() => {
+                  setShowGoogleChooser(true);
+                }, 600);
+              } else {
+                setError(`Google authentication failed: ${err.message}`);
+              }
             }
           },
         });
@@ -817,9 +841,23 @@ export function AuthModal() {
       ) : (
         <div className="p-6 flex flex-col gap-4">
         {error && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
-            <AlertCircle className="size-4 shrink-0" />
-            <span>{error}</span>
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {error.toLowerCase().includes("popup") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setShowGoogleChooser(true);
+                }}
+                className="underline font-semibold text-white hover:text-emerald-400 shrink-0 cursor-pointer ml-2"
+              >
+                1-Click Sign-In
+              </button>
+            )}
           </div>
         )}
 
