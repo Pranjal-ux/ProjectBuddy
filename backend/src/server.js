@@ -38,8 +38,8 @@ app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// API Health & Status check
-app.get("/api/health", (req, res) => {
+// Root & Health check handlers (supports /, /health, and /api/health)
+const sendHealthStatus = (req, res) => {
   const dbStatus = getDbStatus();
   res.status(200).json({
     status: "ok",
@@ -50,7 +50,11 @@ app.get("/api/health", (req, res) => {
       readyState: dbStatus.readyState,
     },
   });
-});
+};
+
+app.get("/", sendHealthStatus);
+app.get("/health", sendHealthStatus);
+app.get("/api/health", sendHealthStatus);
 
 // Routes
 app.use("/api/auth", authRoutes);
