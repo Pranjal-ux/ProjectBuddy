@@ -45,39 +45,25 @@ Your repo: `https://github.com/Pranjal-ux/ProjectBuddy.git`
 
 6. Click **Deploy Web Service**.
 7. Once deployed, Render will provide your live backend URL, for example:
-   👉 `https://projectbuddy-backend.onrender.com`
+### 🌐 Live Production URLs
 
-> **Verification**: Open `https://projectbuddy-backend.onrender.com/api/health` in your browser. It should return:
-> `{"status":"ok","message":"ProjectBuddy Backend API is running smoothly", ...}`
-
----
-
-## ⚡ Step 3: Deploy Frontend to Vercel (https://vercel.com)
-
-1. Log in to your [Vercel Dashboard](https://vercel.com).
-2. Click **Add New...** → **Project**.
-3. Select and import `Pranjal-ux/ProjectBuddy`.
-4. Configure the project settings:
-   - **Framework Preset**: `Next.js`
-   - **Root Directory**: Click **Edit** and choose `frontend`.
-5. Expand **Environment Variables** and add:
-
-| Key | Value |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | `https://projectbuddy-backend.onrender.com/api` (Replace with your actual Render URL from Step 2) |
-
-6. Click **Deploy**.
-7. Vercel will build and deploy your Next.js application, giving you a live URL, for example:
-   👉 `https://projectbuddy.vercel.app`
+- **Backend (Render)**: [https://projectbuddy-988y.onrender.com](https://projectbuddy-988y.onrender.com)
+  - Health check: `https://projectbuddy-988y.onrender.com/health`
+- **Frontend (Vercel)**: [https://projectbuddy-drab.vercel.app](https://projectbuddy-drab.vercel.app)
+  - API proxy check: `https://projectbuddy-drab.vercel.app/api/health`
 
 ---
 
-## 🔗 Step 4: Link Frontend and Backend Together
+## 🔗 Live Configuration Summary
 
-1. **Update Backend CORS / CLIENT_URL on Render**:
-   - Go to your Render Web Service dashboard → **Environment**.
-   - Edit the `CLIENT_URL` variable to your new Vercel domain:
-     `CLIENT_URL = https://projectbuddy.vercel.app`
+1. **Backend Environment on Render**:
+   - `CLIENT_URL` = `https://projectbuddy-drab.vercel.app`
+   - Health check path = `/health` (or `/api/health`)
+
+2. **Frontend Environment on Vercel**:
+   - Project Name: `projectbuddy`
+   - `NEXT_PUBLIC_API_URL` = `https://projectbuddy-988y.onrender.com/api`
+   - Rewrites in `next.config.ts` automatically proxy `/api/*` to the Render backend.
    - Render will auto-deploy the changes.
 
 2. **Update Google Cloud Console Authorized Origins (Optional for Google OAuth)**:
