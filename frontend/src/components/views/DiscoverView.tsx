@@ -34,19 +34,14 @@ import { Dialog, DialogHeader } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { GithubIcon, LinkedinIcon, TwitterIcon } from "@/components/ui/BrandIcons";
-import {
-  initialPosts,
-  suggestedProjects,
-  suggestedPeople,
-  Post,
-} from "@/data/mockData";
+import { Post } from "@/data/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { api, User as UserType } from "@/lib/api";
 
 interface DiscoverViewProps {
   onJoinClick: (post: Post) => void;
   searchQuery: string;
-  onQuickViewProject?: (project: (typeof suggestedProjects)[0]) => void;
+  onQuickViewProject?: (project: any) => void;
   openCreateModal?: () => void;
   onNavigateToTab?: (tab: string) => void;
   onSelectUser?: (user: {
@@ -85,7 +80,7 @@ interface NormalizedProject {
   };
   createdAt?: string;
   rawPost?: Post;
-  rawSuggested?: (typeof suggestedProjects)[0];
+  rawSuggested?: any;
 }
 
 interface DeveloperCardData {
@@ -234,9 +229,7 @@ export function DiscoverView({
     const pool: NormalizedProject[] = [];
     const seenIds = new Set<string>();
 
-    // 1. Projects from backend posts or initialPosts
-    const sourcePosts = backendPosts.length > 0 ? backendPosts : initialPosts;
-    sourcePosts
+    backendPosts
       .filter((p) => p.type === "project")
       .forEach((post) => {
         if (seenIds.has(post.id)) return;
@@ -274,52 +267,15 @@ export function DiscoverView({
             verified: post.author.verified,
           },
           stats: {
-            likes: post.stats?.likes || 12,
-            comments: post.stats?.comments || 2,
-            reposts: post.stats?.reposts || 4,
-            bookmarks: post.stats?.bookmarks || 5,
+            likes: post.stats?.likes || 0,
+            comments: post.stats?.comments || 0,
+            reposts: post.stats?.reposts || 0,
+            bookmarks: post.stats?.bookmarks || 0,
           },
           createdAt: post.createdAt,
           rawPost: post,
         });
       });
-
-    // 2. Curated suggested projects
-    suggestedProjects.forEach((sp) => {
-      if (seenIds.has(sp.id)) return;
-      seenIds.add(sp.id);
-
-      const parsedMembers = sp.members.split("/").map((s) => parseInt(s.trim()));
-      const current = parsedMembers[0] || 2;
-      const max = parsedMembers[1] || 4;
-
-      pool.push({
-        id: sp.id,
-        title: sp.title,
-        description: sp.description,
-        category: sp.category || "systems",
-        tags: sp.tags,
-        team: sp.team || {
-          current,
-          max,
-          lookingFor: ["Contributor", "Systems Dev"],
-        },
-        author: sp.author || {
-          name: "Project Lead",
-          handle: "@lead",
-          fallback: "PL",
-          role: "Architect",
-        },
-        stats: {
-          likes: sp.stars || 45,
-          comments: 6,
-          reposts: 8,
-          bookmarks: 14,
-        },
-        createdAt: "Active",
-        rawSuggested: sp,
-      });
-    });
 
     return pool;
   }, [backendPosts]);
@@ -329,68 +285,34 @@ export function DiscoverView({
     const pool: DeveloperCardData[] = [];
     const seenHandles = new Set<string>();
 
-    // 1. Backend discovered users
-    if (backendDevelopers.length > 0) {
-      backendDevelopers.forEach((dev) => {
-        const handle = dev.handle?.toLowerCase();
-        if (!handle || seenHandles.has(handle)) return;
-        seenHandles.add(handle);
-
-        pool.push({
-          id: dev.id || dev._id || `dev-${handle}`,
-          name: dev.name,
-          handle: dev.handle,
-          role: dev.role || "Software Engineer",
-          bio: dev.bio || "Building innovative developer experiences on ProjectBuddy.",
-          location: dev.location || "Remote / Global",
-          availability: dev.availability || "open_to_collab",
-          experienceLevel: dev.experienceLevel || "mid",
-          skills: dev.skills && dev.skills.length > 0 ? dev.skills : ["TypeScript", "React", "Node.js"],
-          avatar: dev.avatar,
-          initials: dev.initials || "DEV",
-          stats: {
-            activeProjectsCount: dev.stats?.activeProjectsCount || 2,
-            teamsJoinedCount: dev.stats?.teamsJoinedCount || 3,
-            collaboratorsCount: dev.stats?.collaboratorsCount || 8,
-            matchScore: dev.stats?.matchScore || 94,
-          },
-          customStatus: dev.customStatus,
-          websiteUrl: dev.websiteUrl,
-          githubUrl: dev.githubUrl,
-          linkedinUrl: dev.linkedinUrl,
-          twitterUrl: dev.twitterUrl,
-        });
-      });
-    }
-
-    // 2. Curated suggested developers
-    suggestedPeople.forEach((sp) => {
-      const handle = sp.handle.toLowerCase();
-      if (seenHandles.has(handle)) return;
+    backendDevelopers.forEach((dev) => {
+      const handle = dev.handle?.toLowerCase();
+      if (!handle || seenHandles.has(handle)) return;
       seenHandles.add(handle);
 
       pool.push({
-        id: sp.id,
-        name: sp.name,
-        handle: sp.handle,
-        role: sp.role,
-        bio: sp.bio || "Building open source systems on ProjectBuddy.",
-        location: sp.location || "Global / Remote",
-        availability: sp.availability || "available",
-        experienceLevel: sp.experienceLevel || "senior",
-        skills: sp.skills,
-        avatar: sp.avatar,
-        initials: sp.initials,
-        stats: sp.stats || {
-          activeProjectsCount: 3,
-          teamsJoinedCount: 4,
-          collaboratorsCount: 12,
-          matchScore: 92,
+        id: dev.id || dev._id || `dev-${handle}`,
+        name: dev.name,
+        handle: dev.handle,
+        role: dev.role || "Software Engineer",
+        bio: dev.bio || "Building innovative developer experiences on ProjectBuddy.",
+        location: dev.location || "Remote / Global",
+        availability: dev.availability || "open_to_collab",
+        experienceLevel: dev.experienceLevel || "mid",
+        skills: dev.skills && dev.skills.length > 0 ? dev.skills : ["TypeScript", "React", "Node.js"],
+        avatar: dev.avatar,
+        initials: dev.initials || (dev.name || "DV").slice(0, 2).toUpperCase(),
+        stats: {
+          activeProjectsCount: dev.stats?.activeProjectsCount || 0,
+          teamsJoinedCount: dev.stats?.teamsJoinedCount || 0,
+          collaboratorsCount: dev.stats?.collaboratorsCount || 0,
+          matchScore: dev.stats?.matchScore || 94,
         },
-        customStatus: "Open to collaborate on ambitious projects",
-        githubUrl: sp.githubUrl,
-        linkedinUrl: sp.linkedinUrl,
-        twitterUrl: sp.twitterUrl,
+        customStatus: dev.customStatus,
+        websiteUrl: dev.websiteUrl,
+        githubUrl: dev.githubUrl,
+        linkedinUrl: dev.linkedinUrl,
+        twitterUrl: dev.twitterUrl,
       });
     });
 
@@ -1195,7 +1117,7 @@ export function DiscoverView({
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
             {filteredDevelopers.map((dev) => {
               const { score: devSynergy, overlapping } = computeSynergy(dev.skills);
               const isAvailable = dev.availability === "available";
@@ -1204,7 +1126,7 @@ export function DiscoverView({
               return (
                 <div
                   key={dev.id}
-                  className="p-5 rounded-2xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] transition-all flex flex-col justify-between gap-4 group relative"
+                  className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] transition-all flex flex-col justify-between gap-4 group relative overflow-hidden"
                 >
                   <div className="flex flex-col gap-3">
                     {/* Header: Avatar, Name, Availability, Synergy */}
@@ -1335,17 +1257,41 @@ export function DiscoverView({
                   </div>
 
                   {/* Card Actions */}
-                  <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedDeveloperForModal(dev)}
-                      className="h-8 px-2.5 text-xs text-[var(--text-secondary)] hover:text-white cursor-pointer"
-                    >
-                      <span>Snapshot</span>
-                    </Button>
+                  <div className="pt-3 border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedDeveloperForModal(dev)}
+                        className="h-7 sm:h-8 px-2 text-xs text-[var(--text-secondary)] hover:text-white cursor-pointer"
+                      >
+                        <span>Snapshot</span>
+                      </Button>
+                      {(dev.githubUrl || dev.handle) && (
+                        <a
+                          href={dev.githubUrl || `https://github.com/${dev.handle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-low)] hover:bg-[var(--bg-surface-container)] text-zinc-400 hover:text-white transition-colors"
+                          title={`${dev.name}'s GitHub`}
+                        >
+                          <GithubIcon className="size-3.5" />
+                        </a>
+                      )}
+                      {(dev.linkedinUrl || dev.name) && (
+                        <a
+                          href={dev.linkedinUrl || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(dev.name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg border border-[#0077b5]/30 bg-[#0077b5]/10 hover:bg-[#0077b5]/20 text-[#38bdf8] hover:text-[#70b5f9] transition-colors"
+                          title={`${dev.name}'s LinkedIn`}
+                        >
+                          <LinkedinIcon className="size-3.5" />
+                        </a>
+                      )}
+                    </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                       {/* Follow toggle button */}
                       <Button
                         size="sm"
@@ -1357,7 +1303,7 @@ export function DiscoverView({
                             id: dev.id,
                           })
                         }
-                        className={`h-8 px-2.5 text-xs rounded-lg gap-1 cursor-pointer group/btn ${
+                        className={`h-7 sm:h-8 px-2.5 text-xs rounded-lg gap-1 cursor-pointer group/btn shrink-0 ${
                           isFollowing(dev.handle)
                             ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
                             : "bg-[var(--bg-surface-high)] text-white hover:bg-white hover:text-black font-medium"
@@ -1381,7 +1327,7 @@ export function DiscoverView({
                       <Button
                         size="sm"
                         onClick={() => handleOpenInviteModal(dev)}
-                        className="h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg gap-1.5 cursor-pointer shadow-sm"
+                        className="h-7 sm:h-8 px-2.5 sm:px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold rounded-lg gap-1.5 cursor-pointer shadow-sm shrink-0"
                       >
                         <UserPlus className="size-3.5" />
                         <span>Invite</span>
@@ -1488,37 +1434,46 @@ export function DiscoverView({
 
             {/* Social & Code Links */}
             <div className="flex items-center gap-3 pt-2">
-              {selectedDeveloperForModal.githubUrl && (
-                <a
-                  href={selectedDeveloperForModal.githubUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
-                >
-                  <GithubIcon className="size-4" />
-                  <span>GitHub</span>
-                </a>
-              )}
-              {selectedDeveloperForModal.linkedinUrl && (
-                <a
-                  href={selectedDeveloperForModal.linkedinUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
-                >
-                  <LinkedinIcon className="size-4" />
-                  <span>LinkedIn</span>
-                </a>
-              )}
+              <a
+                href={
+                  selectedDeveloperForModal.githubUrl ||
+                  `https://github.com/${selectedDeveloperForModal.handle.replace("@", "")}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-surface-low)] hover:bg-[var(--bg-surface-high)] border border-[var(--border-subtle)] text-white transition-colors"
+              >
+                <GithubIcon className="size-4" />
+                <span>GitHub</span>
+                <ExternalLink className="size-3 opacity-60 ml-0.5" />
+              </a>
+
+              <a
+                href={
+                  selectedDeveloperForModal.linkedinUrl ||
+                  `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(
+                    selectedDeveloperForModal.name
+                  )}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[#0077b5]/10 hover:bg-[#0077b5]/20 border border-[#0077b5]/30 text-[#38bdf8] transition-colors"
+              >
+                <LinkedinIcon className="size-4" />
+                <span>LinkedIn</span>
+                <ExternalLink className="size-3 opacity-60 ml-0.5" />
+              </a>
+
               {selectedDeveloperForModal.twitterUrl && (
                 <a
                   href={selectedDeveloperForModal.twitterUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-surface-low)] hover:bg-[var(--bg-surface-high)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white transition-colors"
                 >
                   <TwitterIcon className="size-4" />
                   <span>X / Twitter</span>
+                  <ExternalLink className="size-3 opacity-60 ml-0.5" />
                 </a>
               )}
             </div>

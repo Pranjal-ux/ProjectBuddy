@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogHeader } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
 import { api, User as UserType } from "@/lib/api";
-import { suggestedPeople } from "@/data/mockData";
 
 interface FollowListModalProps {
   isOpen: boolean;

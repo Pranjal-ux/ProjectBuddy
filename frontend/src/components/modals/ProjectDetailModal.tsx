@@ -4,11 +4,10 @@ import React from "react";
 import { Dialog, DialogHeader } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { suggestedProjects } from "@/data/mockData";
 import { Sparkles, Users, ExternalLink } from "lucide-react";
 
 interface ProjectDetailModalProps {
-  project: (typeof suggestedProjects)[0] | null;
+  project: any | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApply: () => void;
@@ -53,7 +52,7 @@ export function ProjectDetailModal({
             Technologies & Stacks
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {project.tags.map((tag) => (
+            {(project.tags || []).map((tag: string) => (
               <Badge key={tag} variant="tech">
                 {tag}
               </Badge>

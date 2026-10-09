@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Home,
   Compass,
@@ -20,20 +20,146 @@ import { Avatar } from "@/components/ui/avatar";
 import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+
+import { useNotification } from "@/context/NotificationContext";
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   openCreateModal: () => void;
+  unreadMessagesCount?: number;
+  unreadActivitiesCount?: number;
 }
 
-export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarProps) {
+export function Sidebar({
+  activeTab,
+  setActiveTab,
+  openCreateModal,
+  unreadMessagesCount,
+  unreadActivitiesCount,
+}: SidebarProps) {
   const { user, isAuthenticated, logout, openAuthModal } = useAuth();
+  const { showToast } = useNotification();
+  const [unreadActivities, setUnreadActivities] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const prevUnreadMessagesRef = useRef(0);
+  const prevUnreadActivitiesRef = useRef(0);
+
+  // Instantly clear notification count as soon as the user opens the tab
+  useEffect(() => {
+    if (activeTab === "messages") {
+      setUnreadMessages(0);
+      prevUnreadMessagesRef.current = 0;
+    } else if (activeTab === "activity") {
+      setUnreadActivities(0);
+      prevUnreadActivitiesRef.current = 0;
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!user?.handle) {
+      setUnreadActivities(0);
+      setUnreadMessages(0);
+      return;
+    }
+
+    const checkUpdates = async () => {
+      try {
+        const [acts, convs] = await Promise.all([
+          api.getActivities(user.handle),
+          api.getConversations(user.handle),
+        ]);
+
+        if (!isMounted) return;
+
+        if (Array.isArray(acts)) {
+          const unreadAct = acts.filter((a) => a.status === "pending").length;
+          setUnreadActivities(unreadAct);
+          if (unreadAct > prevUnreadActivitiesRef.current && activeTab !== "activity") {
+            const latest = acts[0];
+            showToast({
+              type: "collab",
+              title: "New Team Activity",
+              message: `${latest?.user || "A developer"} ${latest?.action || "sent a request"}`,
+              actionLabel: "View",
+              onAction: () => setActiveTab("activity"),
+            });
+          }
+          prevUnreadActivitiesRef.current = unreadAct;
+        }
+
+        if (Array.isArray(convs)) {
+          const totalUnread = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+          const unreadMsg = activeTab === "messages" ? 0 : totalUnread;
+          setUnreadMessages(unreadMsg);
+
+          // If a new unread message arrived and user is not looking at messages
+          if (totalUnread > prevUnreadMessagesRef.current && activeTab !== "messages") {
+            const unreadConv = convs.find((c) => (c.unreadCount || 0) > 0) || convs[0];
+            const otherDetail = unreadConv?.participantDetails?.find(
+              (p: any) => p.handle?.toLowerCase().replace(/^@/, "") !== user.handle?.toLowerCase().replace(/^@/, "")
+            );
+            const senderName =
+              otherDetail?.name ||
+              unreadConv?.participants?.find(
+                (p: string) => p.toLowerCase().replace(/^@/, "") !== user.handle?.toLowerCase().replace(/^@/, "")
+              ) ||
+              "Collaborator";
+
+            showToast({
+              type: "chat",
+              title: `New message from ${senderName}`,
+              message: unreadConv?.lastMessage || "Sent you a direct message",
+              avatar: otherDetail?.avatar,
+              initials: (senderName || "DV").slice(0, 2).toUpperCase(),
+              actionLabel: "Reply",
+              onAction: () => setActiveTab("messages"),
+            });
+          }
+          prevUnreadMessagesRef.current = activeTab === "messages" ? 0 : totalUnread;
+        }
+      } catch (err) {
+        // Silently retain
+      }
+    };
+
+    checkUpdates();
+    const interval = setInterval(checkUpdates, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [user?.handle, activeTab, showToast, setActiveTab]);
+
+  const activityBadge =
+    activeTab === "activity"
+      ? undefined
+      : unreadActivitiesCount !== undefined
+      ? unreadActivitiesCount > 0
+        ? String(unreadActivitiesCount)
+        : undefined
+      : unreadActivities > 0
+      ? String(unreadActivities)
+      : undefined;
+
+  const messageBadge =
+    activeTab === "messages"
+      ? undefined
+      : unreadMessagesCount !== undefined
+      ? unreadMessagesCount > 0
+        ? String(unreadMessagesCount)
+        : undefined
+      : unreadMessages > 0
+      ? String(unreadMessages)
+      : undefined;
+
   const navItems = [
     { id: "home", label: "Home", icon: Home },
     { id: "discover", label: "Discover", icon: Compass },
-    { id: "messages", label: "Messages", icon: MessageSquare, badge: "3" },
-    { id: "activity", label: "Activity", icon: Bell, badge: "5" },
+    { id: "messages", label: "Messages", icon: MessageSquare, badge: messageBadge },
+    { id: "activity", label: "Activity", icon: Bell, badge: activityBadge },
     { id: "bookmarks", label: "Bookmarks", icon: Bookmark },
     { id: "profile", label: "Profile", icon: User },
     { id: "settings", label: "Settings", icon: Settings },
@@ -43,8 +169,8 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
   const mobileNavItems = [
     { id: "home", label: "Home", icon: Home },
     { id: "discover", label: "Discover", icon: Compass },
-    { id: "messages", label: "Messages", icon: MessageSquare, badge: "3" },
-    { id: "activity", label: "Activity", icon: Bell, badge: "5" },
+    { id: "messages", label: "Messages", icon: MessageSquare, badge: messageBadge },
+    { id: "activity", label: "Activity", icon: Bell, badge: activityBadge },
     { id: "profile", label: "Profile", icon: User },
   ];
 
@@ -59,13 +185,13 @@ export function Sidebar({ activeTab, setActiveTab, openCreateModal }: SidebarPro
       >
         <div className="flex flex-col gap-4 lg:gap-6">
           {/* Logo and Brand */}
-          <div className="flex items-center justify-between px-1 pt-1 lg:px-2">
+          <div className="flex items-center justify-center lg:justify-start px-1 pt-1 lg:px-2">
             <div
               onClick={() => setActiveTab("home")}
               className="flex items-center cursor-pointer transition-transform hover:scale-[1.02]"
               title="ProjectBuddy Home"
             >
-              <ProjectBuddyLogo variant="responsive" size="md" showBadge={true} />
+              <ProjectBuddyLogo variant="responsive" size="md" />
             </div>
           </div>
 

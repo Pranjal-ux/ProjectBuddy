@@ -516,7 +516,7 @@ export function AuthModal() {
       <DialogHeader onClose={closeAuthModal}>
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <ProjectBuddyLogo variant="full" size="sm" />
+            <ProjectBuddyLogo variant="full" size="md" />
           </div>
           <div className="flex items-center gap-2">
             {otpStep ? (

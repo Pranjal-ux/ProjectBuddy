@@ -27,7 +27,6 @@ import {
   X,
 } from "lucide-react";
 import { GithubIcon, LinkedinIcon, TwitterIcon } from "@/components/ui/BrandIcons";
-import { initialPosts, suggestedPeople } from "@/data/mockData";
 import { useAuth } from "@/context/AuthContext";
 import { api, User as UserType } from "@/lib/api";
 import { EditPhotoModal } from "@/components/profile/EditPhotoModal";
@@ -74,13 +73,14 @@ export function ProfileView({
 
   // Projects state
   const [backendProjects, setBackendProjects] = useState<any[]>([]);
+  const [recommendedDevs, setRecommendedDevs] = useState<UserType[]>([]);
 
   // Follow & profile stats state
   const [stats, setStats] = useState({
-    activeProjectsCount: activeUser?.stats?.activeProjectsCount ?? 3,
-    teamsJoinedCount: activeUser?.stats?.teamsJoinedCount ?? 5,
-    collaboratorsCount: activeUser?.stats?.collaboratorsCount ?? 14,
-    matchScore: activeUser?.stats?.matchScore ?? 98,
+    activeProjectsCount: activeUser?.stats?.activeProjectsCount ?? 0,
+    teamsJoinedCount: activeUser?.stats?.teamsJoinedCount ?? 0,
+    collaboratorsCount: activeUser?.stats?.collaboratorsCount ?? 0,
+    matchScore: activeUser?.stats?.matchScore ?? 95,
     followersCount: activeUser?.stats?.followersCount ?? (activeUser?.followers?.length ?? 0),
     followingCount: activeUser?.stats?.followingCount ?? (activeUser?.following?.length ?? 0),
   });
@@ -89,15 +89,28 @@ export function ProfileView({
   useEffect(() => {
     if (activeUser?.stats) {
       setStats({
-        activeProjectsCount: activeUser.stats.activeProjectsCount ?? 3,
-        teamsJoinedCount: activeUser.stats.teamsJoinedCount ?? 5,
-        collaboratorsCount: activeUser.stats.collaboratorsCount ?? 14,
-        matchScore: activeUser.stats.matchScore ?? 98,
+        activeProjectsCount: activeUser.stats.activeProjectsCount ?? 0,
+        teamsJoinedCount: activeUser.stats.teamsJoinedCount ?? 0,
+        collaboratorsCount: activeUser.stats.collaboratorsCount ?? 0,
+        matchScore: activeUser.stats.matchScore ?? 95,
         followersCount: activeUser.stats.followersCount ?? (activeUser.followers?.length ?? 0),
         followingCount: activeUser.stats.followingCount ?? (activeUser.following?.length ?? 0),
       });
     }
   }, [activeUser]);
+
+  // Load real recommended developers
+  useEffect(() => {
+    let isMounted = true;
+    api.searchDevelopers().then((devs) => {
+      if (isMounted && Array.isArray(devs)) {
+        setRecommendedDevs(devs);
+      }
+    }).catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fetch live stats & projects for active user from backend
   useEffect(() => {
@@ -200,34 +213,8 @@ export function ProfileView({
           "Docker",
         ];
 
-  // Combine backend projects or mockData posts
-  const mockUserProjects = initialPosts.filter(
-    (p) => p.author.handle === activeUser?.handle
-  );
-
-  const displayProjects =
-    backendProjects.length > 0
-      ? backendProjects
-      : mockUserProjects.length > 0
-      ? mockUserProjects.map((p) => ({
-          id: p.id,
-          title: p.title || "Project",
-          description: p.content,
-          tags: p.tags,
-          team: p.team,
-          createdAt: p.createdAt,
-        }))
-      : [
-          {
-            id: "proj-1",
-            title: "AI-based Pothole Detection System",
-            description:
-              "Building an AI-based pothole and road defect detection system using YOLO + FastAPI with real-time video stream processing and OpenStreetMap overlays.",
-            tags: ["Python", "YOLO", "FastAPI", "React", "PyTorch"],
-            team: { current: 2, max: 4 },
-            createdAt: "Just now",
-          },
-        ];
+  // Display real backend projects
+  const displayProjects = backendProjects || [];
 
   return (
     <div className="flex flex-col max-w-4xl p-3 sm:p-6 gap-4 sm:gap-6">
@@ -499,41 +486,51 @@ export function ProfileView({
                 "Building software and collaborative tools on ProjectBuddy."}
             </p>
 
-            {/* Social Links Row */}
+            {/* Social Media Links Row */}
             <div className="flex flex-wrap items-center gap-2 pt-2">
-              {activeUser?.githubUrl && (
-                <a
-                  href={activeUser.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <GithubIcon className="size-3.5 text-zinc-400" />
-                  <span>GitHub</span>
-                  <ExternalLink className="size-3 text-zinc-500" />
-                </a>
-              )}
-              {activeUser?.linkedinUrl && (
-                <a
-                  href={activeUser.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <LinkedinIcon className="size-3.5 text-zinc-400" />
-                  <span>LinkedIn</span>
-                  <ExternalLink className="size-3 text-zinc-500" />
-                </a>
-              )}
+              <a
+                href={
+                  activeUser?.githubUrl ||
+                  (activeUser?.handle
+                    ? `https://github.com/${activeUser.handle.replace("@", "")}`
+                    : "https://github.com")
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/80 text-xs font-medium text-white transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-white/30"
+                title={`Visit ${activeUser?.name || "developer"}'s GitHub profile`}
+              >
+                <GithubIcon className="size-4 text-white" />
+                <span>GitHub</span>
+                <ExternalLink className="size-3 text-zinc-400" />
+              </a>
+
+              <a
+                href={
+                  activeUser?.linkedinUrl ||
+                  (activeUser?.handle
+                    ? `https://linkedin.com/in/${activeUser.handle.replace("@", "")}`
+                    : "https://linkedin.com")
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-[#0077b5]/15 hover:bg-[#0077b5]/25 border border-[#0077b5]/40 text-xs font-medium text-[#38bdf8] hover:text-white transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                title={`Connect with ${activeUser?.name || "developer"} on LinkedIn`}
+              >
+                <LinkedinIcon className="size-4 text-[#38bdf8]" />
+                <span>LinkedIn</span>
+                <ExternalLink className="size-3 text-[#38bdf8]/70" />
+              </a>
+
               {activeUser?.twitterUrl && (
                 <a
                   href={activeUser.twitterUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <TwitterIcon className="size-3.5 text-zinc-400" />
-                  <span>Twitter / X</span>
+                  <span>X / Twitter</span>
                   <ExternalLink className="size-3 text-zinc-500" />
                 </a>
               )}
@@ -664,69 +661,75 @@ export function ProfileView({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {suggestedPeople
-            .filter((p) => p.handle?.toLowerCase() !== activeUser?.handle?.toLowerCase())
-            .slice(0, 3)
-            .map((person) => {
-              const followed = isFollowing(person.handle);
-              return (
-                <div
-                  key={person.id}
-                  className="p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between gap-2.5 hover:border-white/20 transition-all"
-                >
+          {recommendedDevs.length === 0 ? (
+            <div className="col-span-full py-4 text-center text-xs text-[var(--text-muted)] font-mono">
+              No recommended engineers available right now.
+            </div>
+          ) : (
+            recommendedDevs
+              .filter((p) => p.handle?.toLowerCase() !== activeUser?.handle?.toLowerCase())
+              .slice(0, 3)
+              .map((person) => {
+                const followed = isFollowing(person.handle);
+                return (
                   <div
-                    className="flex items-center gap-2.5 min-w-0 cursor-pointer"
-                    onClick={() => setInspectedUser(person as any)}
+                    key={person.id || person._id || person.handle}
+                    className="p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between gap-2.5 hover:border-white/20 transition-all"
                   >
-                    <Avatar
-                      src={person.avatar}
-                      fallback={person.initials}
-                      size="sm"
-                      className="ring-1 ring-[var(--border-subtle)] shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-white truncate hover:underline">
-                        {person.name}
-                      </span>
-                      <span className="text-[11px] text-[var(--text-secondary)] truncate">
-                        {person.role}
-                      </span>
+                    <div
+                      className="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                      onClick={() => setInspectedUser(person)}
+                    >
+                      <Avatar
+                        src={person.avatar}
+                        fallback={person.initials || (person.name || "DV").slice(0, 2).toUpperCase()}
+                        size="sm"
+                        className="ring-1 ring-[var(--border-subtle)] shrink-0"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-white truncate hover:underline">
+                          {person.name}
+                        </span>
+                        <span className="text-[11px] text-[var(--text-secondary)] truncate">
+                          {person.role || "Developer"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <Button
-                    size="sm"
-                    variant={followed ? "outline" : "secondary"}
-                    onClick={() =>
-                      toggleFollowUser({
-                        handle: person.handle,
-                        name: person.name,
-                        id: person.id,
-                      })
-                    }
-                    className={`h-7 px-2.5 text-xs font-medium shrink-0 rounded-lg gap-1 cursor-pointer group/btn ${
-                      followed
-                        ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
-                        : "bg-white hover:bg-neutral-200 text-black font-semibold shadow-sm"
-                    }`}
-                  >
-                    {followed ? (
-                      <>
-                        <Check className="size-3 text-emerald-400 group-hover/btn:hidden" />
-                        <span className="group-hover/btn:hidden">Following</span>
-                        <X className="size-3 hidden group-hover/btn:inline text-red-400" />
-                        <span className="hidden group-hover/btn:inline">Unfollow</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="size-3" />
-                        <span>Follow</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
+                    <Button
+                      size="sm"
+                      variant={followed ? "outline" : "secondary"}
+                      onClick={() =>
+                        toggleFollowUser({
+                          handle: person.handle,
+                          name: person.name,
+                          id: person.id || person._id,
+                        })
+                      }
+                      className={`h-7 px-2.5 text-xs font-medium shrink-0 rounded-lg gap-1 cursor-pointer group/btn ${
+                        followed
+                          ? "border-emerald-500/30 text-emerald-400 hover:border-red-500/40 hover:text-red-400 hover:bg-red-500/10"
+                          : "bg-white hover:bg-neutral-200 text-black font-semibold shadow-sm"
+                      }`}
+                    >
+                      {followed ? (
+                        <>
+                          <Check className="size-3 text-emerald-400 group-hover/btn:hidden" />
+                          <span className="group-hover/btn:hidden">Following</span>
+                          <X className="size-3 hidden group-hover/btn:inline text-red-400" />
+                          <span className="hidden group-hover/btn:inline">Unfollow</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="size-3" />
+                          <span>Follow</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                );
+              })
+          )}
         </div>
       </div>
 
@@ -771,43 +774,54 @@ export function ProfileView({
         </div>
 
         <div className="flex flex-col gap-3">
-          {displayProjects.map((p: any) => (
-            <div
-              key={p.id || p._id}
-              className="p-4 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-2 hover:border-white/20 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-white">
-                  {p.title || "Project"}
-                </span>
-                {p.team && (
-                  <span className="text-xs font-mono text-zinc-300">
-                    Team: {p.team.current} / {p.team.max} members
-                  </span>
-                )}
-                {p.role && !p.team && (
-                  <span className="text-xs font-mono text-zinc-400">
-                    {p.role}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-[var(--text-secondary)]">
-                {p.description || p.content}
+          {displayProjects.length === 0 ? (
+            <div className="p-8 text-center flex flex-col items-center justify-center gap-2 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)]">
+              <span className="text-xs text-[var(--text-muted)]">No projects published yet</span>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                {isOwnProfile
+                  ? "Share your open-source projects, team initiatives, or tech showcases with the community."
+                  : `${activeUser?.name || "This developer"} hasn't published any projects yet.`}
               </p>
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {p.tags?.map((t: string) => (
-                    <Badge key={t} variant="tech" className="text-[10px]">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-                <span className="text-[11px] text-[var(--text-muted)] font-mono">
-                  {p.createdAt || "Active"}
-                </span>
-              </div>
             </div>
-          ))}
+          ) : (
+            displayProjects.map((p: any) => (
+              <div
+                key={p.id || p._id}
+                className="p-4 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-2 hover:border-white/20 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm text-white">
+                    {p.title || "Project"}
+                  </span>
+                  {p.team && (
+                    <span className="text-xs font-mono text-zinc-300">
+                      Team: {p.team.current} / {p.team.max} members
+                    </span>
+                  )}
+                  {p.role && !p.team && (
+                    <span className="text-xs font-mono text-zinc-400">
+                      {p.role}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {p.description || p.content}
+                </p>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {p.tags?.map((t: string) => (
+                      <Badge key={t} variant="tech" className="text-[10px]">
+                        {t}
+                      </Badge>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                    {p.createdAt || "Active"}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -1,7 +1,9 @@
 import { Post } from "@/data/mockData";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  typeof window !== "undefined"
+    ? "/api"
+    : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000/api");
 
 export interface ProfileStats {
   activeProjectsCount?: number;
@@ -95,6 +97,36 @@ export interface JoinRequestPayload {
   role: string;
   githubUrl?: string;
   pitch: string;
+}
+
+export interface ChatContact {
+  id: string;
+  _id?: string;
+  name: string;
+  handle: string;
+  avatar: string;
+  initials: string;
+  project: string;
+  lastMsg: string;
+  time: string;
+  unread: number;
+  online: boolean;
+  role: string;
+}
+
+export interface ChatMessage {
+  id?: string;
+  _id?: string;
+  conversationId: string;
+  senderHandle: string;
+  senderName?: string;
+  senderAvatar?: string;
+  text: string;
+  time: string;
+  status?: "sent" | "delivered" | "seen";
+  seen?: boolean;
+  seenAt?: string;
+  createdAt?: string;
 }
 
 export const getAuthHeaders = (): Record<string, string> => {
@@ -323,27 +355,46 @@ export const api = {
     return data.projects || [];
   },
 
-  // Profile: Search developers
-  async searchDevelopers(params?: {
-    q?: string;
-    skill?: string;
-    role?: string;
-    availability?: string;
-  }): Promise<User[]> {
-    const query = new URLSearchParams();
-    if (params?.q) query.set("q", params.q);
-    if (params?.skill) query.set("skill", params.skill);
-    if (params?.role) query.set("role", params.role);
-    if (params?.availability) query.set("availability", params.availability);
+  // Profile: Search / list developers
+  async searchDevelopers(
+    queryOrParams?:
+      | string
+      | {
+          q?: string;
+          query?: string;
+          skill?: string;
+          skills?: string;
+          role?: string;
+          availability?: string;
+        },
+    skillsParam?: string
+  ): Promise<User[]> {
+    try {
+      const query = new URLSearchParams();
+      if (typeof queryOrParams === "string") {
+        if (queryOrParams) query.set("q", queryOrParams);
+        if (skillsParam) query.set("skill", skillsParam);
+      } else if (queryOrParams && typeof queryOrParams === "object") {
+        const qVal = queryOrParams.q || queryOrParams.query;
+        if (qVal) query.set("q", qVal);
+        const skillVal = queryOrParams.skill || queryOrParams.skills;
+        if (skillVal) query.set("skill", skillVal);
+        if (queryOrParams.role) query.set("role", queryOrParams.role);
+        if (queryOrParams.availability) query.set("availability", queryOrParams.availability);
+      }
 
-    const res = await fetch(`${API_BASE_URL}/profile/search?${query.toString()}`, {
-      cache: "no-store",
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to search developers");
+      const queryString = query.toString();
+      const url = queryString
+        ? `${API_BASE_URL}/profile/search?${queryString}`
+        : `${API_BASE_URL}/profile/search`;
+      const res = await fetch(url, { cache: "no-store", headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to search developers");
+      const json = await res.json();
+      return json.developers || [];
+    } catch (err) {
+      console.warn("Backend not reachable for developers search", err);
+      return [];
     }
-    return data.developers || [];
   },
 
   // Profile: Toggle follow status (follow/unfollow a developer)
@@ -401,6 +452,7 @@ export const api = {
     return data.following || [];
   },
 
+
   // Fetch activities feed
   async getActivities(recipientHandle?: string): Promise<ActivityItem[]> {
     try {
@@ -414,8 +466,8 @@ export const api = {
       const json = await res.json();
       return json.data || [];
     } catch (err) {
-      console.warn("Backend not reachable for activities, using local fallback", err);
-      throw err;
+      console.warn("Backend not reachable for activities", err);
+      return [];
     }
   },
 
@@ -604,6 +656,107 @@ export const api = {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(json.message || "Failed to record share");
+    }
+    return json;
+  },
+
+  // Chat: Get all conversations for user
+  async getConversations(handle?: string): Promise<any[]> {
+    try {
+      const query = handle ? `?handle=${encodeURIComponent(handle)}` : "";
+      const res = await fetch(`${API_BASE_URL}/chat/conversations${query}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to fetch conversations");
+      const json = await res.json();
+      return json.data || [];
+    } catch (err) {
+      console.warn("Backend chat not reachable, fallback active", err);
+      return [];
+    }
+  },
+
+  // Chat: Get messages for a conversation
+  async getMessages(conversationId: string, viewerHandle?: string): Promise<ChatMessage[]> {
+    try {
+      const query = viewerHandle ? `?viewerHandle=${encodeURIComponent(viewerHandle)}` : "";
+      const res = await fetch(
+        `${API_BASE_URL}/chat/conversations/${conversationId}/messages${query}`,
+        {
+          cache: "no-store",
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      const json = await res.json();
+      return json.data || [];
+    } catch (err) {
+      console.warn("Backend messages not reachable, fallback active", err);
+      return [];
+    }
+  },
+
+  // Chat: Mark conversation as seen
+  async markConversationAsSeen(conversationId: string, viewerHandle: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/seen`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ viewerHandle }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // Chat: Send a message
+  async sendMessage(
+    conversationId: string,
+    text: string,
+    sender: { handle?: string; name?: string; avatar?: string }
+  ): Promise<ChatMessage> {
+    const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        senderHandle: sender.handle || "@developer",
+        senderName: sender.name || "Developer",
+        senderAvatar: sender.avatar || "",
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to send message");
+    }
+    return json.data;
+  },
+
+  // Chat: Start or find conversation between users
+  async startConversation(payload: {
+    participant1Handle: string;
+    participant1Name?: string;
+    participant1Avatar?: string;
+    participant1Role?: string;
+    participant2Handle: string;
+    participant2Name?: string;
+    participant2Avatar?: string;
+    participant2Role?: string;
+    project?: string;
+    initialMessage?: string;
+  }) {
+    const res = await fetch(`${API_BASE_URL}/chat/conversations/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.message || "Failed to start conversation");
     }
     return json;
   },

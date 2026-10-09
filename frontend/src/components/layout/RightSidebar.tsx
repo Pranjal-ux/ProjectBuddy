@@ -2,18 +2,18 @@
 
 import React, { useState } from "react";
 import { Search, Sparkles, TrendingUp, Users, Check, ExternalLink, X } from "lucide-react";
-import { suggestedProjects, suggestedPeople } from "@/data/mockData";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProjectBuddyLogo } from "@/components/ui/ProjectBuddyLogo";
 import { useAuth } from "@/context/AuthContext";
+import { api, User as UserType } from "@/lib/api";
 
 interface RightSidebarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSelectTag?: (tag: string) => void;
-  onQuickViewProject?: (project: (typeof suggestedProjects)[0]) => void;
+  onQuickViewProject?: (project: any) => void;
   onSelectUser?: (user: {
     handle: string;
     name?: string;
@@ -30,7 +30,58 @@ export function RightSidebar({
   onQuickViewProject,
   onSelectUser,
 }: RightSidebarProps) {
-  const { isFollowing, toggleFollowUser } = useAuth();
+  const { user, isFollowing, toggleFollowUser } = useAuth();
+  const [realDevs, setRealDevs] = useState<UserType[]>([]);
+  const [realProjects, setRealProjects] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    api.searchDevelopers().then((devs) => {
+      if (isMounted && Array.isArray(devs) && devs.length > 0) {
+        setRealDevs(devs);
+      }
+    }).catch(() => {});
+
+    api.getPosts().then((posts) => {
+      if (isMounted && Array.isArray(posts)) {
+        const projs = posts
+          .filter((p) => p.type === "project")
+          .map((p) => ({
+            id: p.id,
+            title: p.title || "Developer Initiative",
+            description: p.content,
+            tags: p.tags || [],
+            members: p.team ? `${p.team.current}/${p.team.max} devs` : "1/3 devs",
+            matchScore: 94,
+            rawPost: p,
+          }));
+        setRealProjects(projs);
+      }
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const displayPeople = React.useMemo(() => {
+    if (realDevs.length > 0) {
+      return realDevs
+        .filter((d) => d.handle?.toLowerCase() !== user?.handle?.toLowerCase())
+        .slice(0, 5)
+        .map((d) => ({
+          id: d.id || d._id || d.handle,
+          name: d.name,
+          handle: d.handle,
+          avatar: d.avatar || "",
+          initials: d.initials || (d.name || "DV").slice(0, 2).toUpperCase(),
+          role: d.role || "Developer",
+          githubUrl: d.githubUrl,
+          linkedinUrl: d.linkedinUrl,
+        }));
+    }
+    return [];
+  }, [realDevs, user?.handle]);
 
   const trendingTags = [
     { tag: "Nextjs15", posts: "1.4k posts" },
@@ -77,37 +128,43 @@ export function RightSidebar({
         </div>
 
         <div className="flex flex-col gap-2.5">
-          {suggestedProjects.map((project) => (
-            <div
-              key={project.id}
-              className="p-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] transition-all flex flex-col gap-2 group cursor-pointer"
-              onClick={() => onQuickViewProject?.(project)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-sm text-white group-hover:text-white transition-colors">
-                  {project.title}
-                </span>
-                <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
-                  {project.matchScore}% match
-                </span>
-              </div>
-              <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
-                {project.description}
-              </p>
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex flex-wrap gap-1">
-                  {project.tags.map((t) => (
-                    <Badge key={t} variant="tech" className="text-[10px] py-0 px-1.5">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-                <span className="text-[11px] text-[var(--text-muted)] font-mono">
-                  {project.members}
-                </span>
-              </div>
+          {realProjects.length === 0 ? (
+            <div className="p-4 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)] font-mono">
+              No recommended projects yet.
             </div>
-          ))}
+          ) : (
+            realProjects.slice(0, 4).map((project) => (
+              <div
+                key={project.id}
+                className="p-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] hover:border-[var(--border-strong)] transition-all flex flex-col gap-2 group cursor-pointer"
+                onClick={() => onQuickViewProject?.(project)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-medium text-sm text-white group-hover:text-white transition-colors">
+                    {project.title}
+                  </span>
+                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
+                    {project.matchScore}% match
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                  {project.description}
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex flex-wrap gap-1">
+                    {project.tags.map((t: string) => (
+                      <Badge key={t} variant="tech" className="text-[10px] py-0 px-1.5">
+                        {t}
+                      </Badge>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                    {project.members}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -121,30 +178,35 @@ export function RightSidebar({
         </div>
 
         <div className="flex flex-col gap-2.5">
-          {suggestedPeople.map((person) => {
-            const followed = isFollowing(person.handle);
-            return (
-              <div
-                key={person.id}
-                className="p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between gap-2"
-              >
+          {displayPeople.length === 0 ? (
+            <div className="p-4 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)] font-mono">
+              No suggested buddies yet.
+            </div>
+          ) : (
+            displayPeople.map((person) => {
+              const followed = isFollowing(person.handle);
+              return (
                 <div
-                  className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-85 transition-opacity"
-                  onClick={() =>
-                    onSelectUser?.({
-                      handle: person.handle,
-                      name: person.name,
-                      avatar: person.avatar,
-                      role: person.role,
-                      fallback: person.initials,
-                    })
-                  }
-                  title={`View ${person.name}'s profile`}
+                  key={person.id}
+                  className="p-3 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between gap-2"
                 >
-                  <Avatar
-                    src={person.avatar}
-                    fallback={person.initials}
-                    size="sm"
+                  <div
+                    className="flex items-center gap-2.5 min-w-0 cursor-pointer hover:opacity-85 transition-opacity"
+                    onClick={() =>
+                      onSelectUser?.({
+                        handle: person.handle,
+                        name: person.name,
+                        avatar: person.avatar,
+                        role: person.role,
+                        fallback: person.initials,
+                      })
+                    }
+                    title={`View ${person.name}'s profile`}
+                  >
+                    <Avatar
+                      src={person.avatar}
+                      fallback={person.initials}
+                      size="sm"
                     className="ring-1 ring-[var(--border-subtle)]"
                   />
                   <div className="flex flex-col min-w-0">
@@ -154,6 +216,39 @@ export function RightSidebar({
                     <span className="text-[11px] text-[var(--text-secondary)] truncate">
                       {person.role}
                     </span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] font-mono text-[var(--text-muted)] truncate">
+                        {person.handle}
+                      </span>
+                      {person.githubUrl && (
+                        <a
+                          href={person.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-zinc-400 hover:text-white transition-colors"
+                          title={`${person.name}'s GitHub`}
+                        >
+                          <svg className="size-2.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                          </svg>
+                        </a>
+                      )}
+                      {person.linkedinUrl && (
+                        <a
+                          href={person.linkedinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#38bdf8] hover:text-[#70b5f9] transition-colors"
+                          title={`${person.name}'s LinkedIn`}
+                        >
+                          <svg className="size-2.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.38-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                          </svg>
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -186,7 +281,8 @@ export function RightSidebar({
                 </Button>
               </div>
             );
-          })}
+          })
+          )}
         </div>
       </div>
 

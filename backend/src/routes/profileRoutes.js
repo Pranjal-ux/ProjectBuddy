@@ -32,6 +32,17 @@ router.put("/me/skills", protect, updateSkills);
 // Developer discovery / search
 router.get("/search", searchDevelopers);
 
+// Cleanup dummy users and posts
+router.post("/cleanup-dummy", async (req, res) => {
+  try {
+    const { seedDatabase } = await import("../utils/seedData.js");
+    await seedDatabase();
+    return res.status(200).json({ success: true, message: "Dummy data purged successfully" });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Follow / Following system
 router.post("/:identifier/follow", optionalProtect, toggleFollowUser);
 router.delete("/:identifier/follow", optionalProtect, toggleFollowUser);

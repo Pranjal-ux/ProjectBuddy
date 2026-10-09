@@ -14,10 +14,11 @@ import { MessagesView } from "@/components/views/MessagesView";
 import { ActivityView } from "@/components/views/ActivityView";
 import { ProfileView } from "@/components/views/ProfileView";
 import { BookmarksView } from "@/components/views/BookmarksView";
-import { initialPosts, suggestedProjects, Post } from "@/data/mockData";
+import { Post } from "@/data/mockData";
 import { Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { AuthModal } from "@/components/modals/AuthModal";
 import { api } from "@/lib/api";
 
@@ -28,9 +29,9 @@ function HomeContent() {
     "for-you" | "following" | "open-teams" | "showcases"
   >("for-you");
   const [theme, setTheme] = useState<"charcoal" | "oled">("charcoal");
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
   // Fetch real-time posts from backend API
   useEffect(() => {
@@ -39,11 +40,11 @@ function HomeContent() {
       try {
         setLoadingPosts(true);
         const data = await api.getPosts(user?.handle);
-        if (isMounted && data && data.length > 0) {
-          setPosts(data);
+        if (isMounted) {
+          setPosts(data || []);
         }
       } catch (err) {
-        console.warn("Could not fetch posts from API, using fallback:", err);
+        console.warn("Could not fetch posts from API:", err);
       } finally {
         if (isMounted) setLoadingPosts(false);
       }
@@ -61,18 +62,24 @@ function HomeContent() {
     null
   );
   const [quickViewModalOpen, setQuickViewModalOpen] = useState(false);
-  const [selectedProjectPreview, setSelectedProjectPreview] = useState<
-    (typeof suggestedProjects)[0] | null
-  >(null);
+  const [selectedProjectPreview, setSelectedProjectPreview] = useState<any | null>(null);
 
   // Inspected User (null = current user's profile)
   const [inspectedUser, setInspectedUser] = useState<any | null>(null);
+
+  // Selected chat contact for direct messaging
+  const [selectedChatContact, setSelectedChatContact] = useState<string | null>(null);
 
   const handleTabChange = (tab: string) => {
     if (tab === "profile") {
       setInspectedUser(null);
     }
     setActiveTab(tab);
+  };
+
+  const handleOpenChat = (targetHandleOrId: string) => {
+    setSelectedChatContact(targetHandleOrId);
+    setActiveTab("messages");
   };
 
   const handleOpenUserProfile = (author: {
@@ -124,7 +131,7 @@ function HomeContent() {
   };
 
   const handleQuickViewProject = (
-    project: (typeof suggestedProjects)[0]
+    project: any
   ) => {
     setSelectedProjectPreview(project);
     setQuickViewModalOpen(true);
@@ -170,8 +177,10 @@ function HomeContent() {
       {/* 2. Main Center Content Stream */}
       <main
         className={cn(
-          "flex-1 min-w-0 border-r border-[var(--border-subtle)] min-h-screen flex flex-col bg-[var(--bg-canvas)]",
-          activeTab === "messages" ? "pb-14 md:pb-0 overflow-hidden" : "pb-16 sm:pb-0"
+          "flex-1 min-w-0 border-r border-[var(--border-subtle)] flex flex-col bg-[var(--bg-canvas)]",
+          activeTab === "messages"
+            ? "h-screen max-h-screen overflow-hidden pb-14 sm:pb-0"
+            : "min-h-screen pb-16 sm:pb-0"
         )}
       >
         {/* Mobile Header for views other than Home & Messages */}
@@ -213,7 +222,27 @@ function HomeContent() {
 
             {/* Live Feed Stream */}
             <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
-              {filteredPosts.length === 0 ? (
+              {loadingPosts && posts.length === 0 ? (
+                <div className="p-4 sm:p-6 flex flex-col gap-4">
+                  {[1, 2, 3].map((n) => (
+                    <div
+                      key={n}
+                      className="p-5 rounded-2xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] animate-pulse flex flex-col gap-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-full bg-white/10" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <div className="w-32 h-3.5 bg-white/10 rounded" />
+                          <div className="w-20 h-2.5 bg-white/5 rounded" />
+                        </div>
+                      </div>
+                      <div className="w-3/4 h-4 bg-white/10 rounded mt-1" />
+                      <div className="w-full h-3 bg-white/5 rounded" />
+                      <div className="w-2/3 h-3 bg-white/5 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredPosts.length === 0 ? (
                 <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
                   <p className="text-sm text-[var(--text-secondary)]">
                     {feedFilter === "following"
@@ -265,9 +294,17 @@ function HomeContent() {
           />
         )}
 
-        {activeTab === "messages" && <MessagesView />}
+        {activeTab === "messages" && (
+          <MessagesView
+            initialChatContact={selectedChatContact}
+            onClearInitialChat={() => setSelectedChatContact(null)}
+            onOpenProfile={handleOpenUserProfile}
+          />
+        )}
 
-        {activeTab === "activity" && <ActivityView />}
+        {activeTab === "activity" && (
+          <ActivityView onOpenChat={handleOpenChat} />
+        )}
 
         {activeTab === "profile" && (
           <ProfileView
@@ -382,8 +419,10 @@ function HomeContent() {
 export default function Home() {
   return (
     <AuthProvider>
-      <HomeContent />
-      <AuthModal />
+      <NotificationProvider>
+        <HomeContent />
+        <AuthModal />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

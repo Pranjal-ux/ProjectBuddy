@@ -11,84 +11,43 @@ import {
   RefreshCw,
   Radio,
   Clock,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api, ActivityItem } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 
-const initialFallbackActivities: ActivityItem[] = [
-  {
-    id: "act-1",
-    type: "join_request",
-    user: "Sarah Chen",
-    handle: "@schen",
-    initials: "SC",
-    action: "requested to join your team for",
-    target: "AI Pothole Detection System",
-    role: "Python Developer / Inference",
-    recipientHandle: "@pranjal",
-    hasAction: true,
-    status: "pending",
-    createdAt: "20m ago",
-  },
-  {
-    id: "act-2",
-    type: "like",
-    user: "Alex Rivera",
-    handle: "@arivera",
-    initials: "AR",
-    action: "liked your project",
-    target: "AI Pothole Detection System",
-    recipientHandle: "@pranjal",
-    hasAction: false,
-    status: "none",
-    createdAt: "1h ago",
-  },
-  {
-    id: "act-3",
-    type: "star",
-    user: "Elena Rostova",
-    handle: "@elena_codes",
-    initials: "ER",
-    action: "bookmarked your code snippet",
-    target: "tokens.config.css",
-    recipientHandle: "@pranjal",
-    hasAction: false,
-    status: "none",
-    createdAt: "3h ago",
-  },
-  {
-    id: "act-4",
-    type: "collab",
-    user: "Rahul Sharma",
-    handle: "@rahul",
-    initials: "RS",
-    action: "invited you to collaborate on",
-    target: "AI Resume Analyzer & Matchmaker",
-    role: "Lead Fullstack Reviewer",
-    recipientHandle: "@pranjal",
-    hasAction: true,
-    status: "pending",
-    createdAt: "5h ago",
-  },
-];
+interface ActivityViewProps {
+  onOpenChat?: (handle: string) => void;
+}
 
-export function ActivityView() {
+export function ActivityView({ onOpenChat }: ActivityViewProps) {
   const { user } = useAuth();
-  const [activities, setActivities] = useState<ActivityItem[]>(initialFallbackActivities);
+  const { showToast } = useNotification();
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [backendOnline, setBackendOnline] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Load cached activity statuses immediately on mount to prevent reload flash
+  // Load cached activity statuses immediately on mount
   useEffect(() => {
     try {
       const cached = localStorage.getItem("projectbuddy_activities_cache");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setActivities(parsed);
+        if (Array.isArray(parsed)) {
+          // Filter out any legacy dummy mocks
+          const cleaned = parsed.filter(
+            (p: any) =>
+              !String(p.id || "").startsWith("act-") &&
+              !String(p.customId || "").startsWith("act-") &&
+              !["Alex Morgan", "Elena Rostova", "Rahul Sharma", "Sarah Chen", "Alex Rivera", "Devon Marcus", "Priya Patel"].includes(p.user)
+          );
+          setActivities(cleaned);
+          localStorage.setItem("projectbuddy_activities_cache", JSON.stringify(cleaned));
         }
       }
     } catch (e) {
@@ -99,9 +58,9 @@ export function ActivityView() {
   const fetchActivitiesList = useCallback(async () => {
     setIsLoading(true);
     try {
-      const handle = user?.handle || "@pranjal";
+      const handle = user?.handle;
       const data = await api.getActivities(handle);
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setActivities((prev) => {
           // Merge server data with any locally accepted/declined state
           const merged = data.map((serverItem) => {
@@ -129,6 +88,8 @@ export function ActivityView() {
           } catch {}
           return merged;
         });
+      } else {
+        setActivities([]);
       }
       setBackendOnline(true);
     } catch {
@@ -160,7 +121,26 @@ export function ActivityView() {
       return updated;
     });
 
-    // 2. Persist to MongoDB backend
+    // 2. Show notification pop-up toast
+    if (status === "accepted") {
+      showToast({
+        type: "collab",
+        title: "Collaborator Accepted! 🎉",
+        message: `${act.user} (${act.handle}) has been added to your team for "${act.target}". Direct chat channel is now live!`,
+        actionLabel: "Chat Now",
+        onAction: () => onOpenChat?.(act.handle),
+        durationMs: 7000,
+      });
+    } else {
+      showToast({
+        type: "info",
+        title: "Request Declined",
+        message: `Join request from ${act.user} for "${act.target}" was declined.`,
+        durationMs: 4000,
+      });
+    }
+
+    // 3. Persist to MongoDB backend
     try {
       const targetId = act.joinRequestId || act._id || act.id || act.customId || actId;
       await api.respondToJoinRequest(targetId, status, act);
@@ -253,91 +233,137 @@ export function ActivityView() {
         </button>
       </div>
 
-      <div className="flex flex-col divide-y divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface-low)] overflow-hidden">
-        {activities.map((act) => {
-          const { icon: Icon, iconColor } = getIconAndStyle(act.type);
-          const actId = act._id || act.id || "";
-          const isPending = !act.status || act.status === "pending";
-          const isAccepted = act.status === "accepted";
-          const isDeclined = act.status === "declined";
-          const isBusy = processingId === actId;
+      {activities.length === 0 ? (
+        <div className="p-12 text-center flex flex-col items-center justify-center gap-3 border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface-low)]">
+          <div className="p-3.5 rounded-full bg-white/5 border border-white/10 text-white/60">
+            <Radio className="size-6 text-zinc-400" />
+          </div>
+          <div className="flex flex-col gap-1 max-w-sm">
+            <h3 className="font-semibold text-sm text-white">No activity or team alerts yet</h3>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              When developers request to join your teams, star your projects, or invite you to collaborate, you&apos;ll be notified here in real-time.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col divide-y divide-[var(--border-subtle)] border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface-low)] overflow-hidden">
+          {activities.map((act) => {
+            const { icon: Icon, iconColor } = getIconAndStyle(act.type);
+            const actId = act._id || act.id || "";
+            const isPending = !act.status || act.status === "pending";
+            const isAccepted = act.status === "accepted";
+            const isDeclined = act.status === "declined";
+            const isBusy = processingId === actId;
 
-          return (
-            <div
-              key={actId}
-              className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 hover:bg-[var(--bg-surface-container)] transition-colors"
-            >
-              <div className="flex items-start gap-3 min-w-0">
-                <div className={`p-2.5 rounded-lg ${iconColor} shrink-0 mt-0.5`}>
-                  <Icon className="size-4" />
-                </div>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">
-                    <span className="font-semibold text-white">{act.user}</span>{" "}
-                    <span className="text-[var(--text-secondary)]">({act.handle})</span>{" "}
-                    {act.action}{" "}
-                    <span className="font-medium text-white">
-                      &quot;{act.target}&quot;
-                    </span>
-                  </p>
-                  {act.role && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-mono text-zinc-400">
-                        Role applied:
+            return (
+              <div
+                key={actId}
+                className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 hover:bg-[var(--bg-surface-container)] transition-colors"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className={`p-2.5 rounded-lg ${iconColor} shrink-0 mt-0.5`}>
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                      <span className="font-semibold text-white">{act.user}</span>{" "}
+                      <span className="text-[var(--text-secondary)]">({act.handle})</span>{" "}
+                      {act.action}{" "}
+                      <span className="font-medium text-white">
+                        &quot;{act.target}&quot;
                       </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--bg-surface-high)] text-white border border-[var(--border-subtle)]">
-                        {act.role}
-                      </span>
+                    </p>
+                    {act.role && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          Role applied:
+                        </span>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--bg-surface-high)] text-white border border-[var(--border-subtle)]">
+                          {act.role}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Accessible Developer GitHub Profile Link */}
+                    {act.handle && (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <a
+                          href={`https://github.com/${act.handle.replace("@", "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 hover:text-white transition-colors bg-[var(--bg-surface-container)] hover:bg-[var(--bg-surface-high)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
+                          title={`View ${act.handle}'s GitHub profile`}
+                        >
+                          <svg className="size-3 fill-current shrink-0" viewBox="0 0 24 24">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                          </svg>
+                          <span>github.com/{act.handle.replace("@", "")}</span>
+                          <ExternalLink className="size-2.5 opacity-60" />
+                        </a>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] mt-0.5">
+                      <Clock className="size-3" />
+                      <span>{formatActivityTime(act.createdAt)}</span>
                     </div>
-                  )}
-                  <div className="flex items-center gap-1 text-[10px] font-mono text-[var(--text-muted)] mt-0.5">
-                    <Clock className="size-3" />
-                    <span>{formatActivityTime(act.createdAt)}</span>
                   </div>
                 </div>
-              </div>
 
-              {act.hasAction && (
-                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 pt-1 sm:pt-0">
-                  {isPending ? (
-                    <>
-                      <Button
-                        size="sm"
-                        disabled={isBusy}
-                        onClick={() => handleResponse(act, "accepted")}
-                        className="h-7 sm:h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold flex items-center gap-1 shadow-sm"
-                      >
-                        <Check className="size-3.5" />
-                        <span>Accept</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={isBusy}
-                        onClick={() => handleResponse(act, "declined")}
-                        className="h-7 sm:h-8 px-2.5 text-xs text-[var(--text-secondary)] hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1"
-                      >
+                {act.hasAction && (
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 pt-1 sm:pt-0">
+                    {isPending ? (
+                      <>
+                        <Button
+                          size="sm"
+                          disabled={isBusy}
+                          onClick={() => handleResponse(act, "accepted")}
+                          className="h-7 sm:h-8 px-3 text-xs bg-white hover:bg-neutral-200 text-black font-semibold flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="size-3.5" />
+                          <span>Accept</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isBusy}
+                          onClick={() => handleResponse(act, "declined")}
+                          className="h-7 sm:h-8 px-2.5 text-xs text-[var(--text-secondary)] hover:text-rose-400 hover:bg-rose-500/10 flex items-center gap-1"
+                        >
+                          <X className="size-3.5" />
+                          <span>Decline</span>
+                        </Button>
+                      </>
+                    ) : isAccepted ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                          <Check className="size-3.5" />
+                          <span>Accepted</span>
+                        </div>
+                        {onOpenChat && (
+                          <Button
+                            size="sm"
+                            onClick={() => onOpenChat(act.handle)}
+                            className="h-7 sm:h-8 px-2.5 text-xs bg-white hover:bg-neutral-200 text-black font-semibold flex items-center gap-1 shadow-sm cursor-pointer"
+                          >
+                            <MessageSquare className="size-3.5" />
+                            <span>Chat</span>
+                          </Button>
+                        )}
+                      </div>
+                    ) : isDeclined ? (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-medium">
                         <X className="size-3.5" />
-                        <span>Decline</span>
-                      </Button>
-                    </>
-                  ) : isAccepted ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
-                      <Check className="size-3.5" />
-                      <span>Accepted</span>
-                    </div>
-                  ) : isDeclined ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-medium">
-                      <X className="size-3.5" />
-                      <span>Declined</span>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                        <span>Declined</span>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

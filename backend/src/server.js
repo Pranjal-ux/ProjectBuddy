@@ -8,6 +8,7 @@ import activityRoutes from "./routes/activityRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -26,21 +27,14 @@ const allowedOrigins = [
 // Middleware
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.startsWith("http://localhost:") ||
-        origin.startsWith("http://127.0.0.1:") ||
-        origin.startsWith("http://192.168.")
-      ) {
-        return callback(null, true);
-      }
-      return callback(null, true);
-    },
+    origin: true, // Allow request origin reflection for localhost, 127.0.0.1, LAN
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    optionsSuccessStatus: 200,
   })
 );
+app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -64,6 +58,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/join-requests", joinRequestRoutes);
 app.use("/api/activities", activityRoutes);
+app.use("/api/chat", chatRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -89,7 +84,7 @@ const startServer = async () => {
   await connectDB();
   await seedDatabase();
 
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`\n======================================================`);
     console.log(`🚀 ProjectBuddy Backend running at: http://localhost:${PORT}`);
     console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);

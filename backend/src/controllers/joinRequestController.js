@@ -1,73 +1,107 @@
 import mongoose from "mongoose";
 import { JoinRequest } from "../models/JoinRequest.js";
 import { Activity } from "../models/Activity.js";
+import { Conversation } from "../models/Conversation.js";
+import { Message } from "../models/Message.js";
+import { inMemoryConversations, inMemoryMessages } from "./chatController.js";
 
 // In-memory fallback stores if MongoDB is not yet connected
 let inMemoryJoinRequests = [];
-let inMemoryActivities = [
-  {
-    _id: "act-init-1",
-    id: "act-init-1",
-    type: "join_request",
-    user: "Sarah Chen",
-    handle: "@schen",
-    initials: "SC",
-    action: "requested to join your team for",
-    target: "AI Pothole Detection System",
-    role: "Python Developer / Inference",
-    recipientHandle: "@pranjal",
-    hasAction: true,
-    status: "pending",
-    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "act-init-2",
-    id: "act-init-2",
-    type: "like",
-    user: "Alex Rivera",
-    handle: "@arivera",
-    initials: "AR",
-    action: "liked your project",
-    target: "AI Pothole Detection System",
-    recipientHandle: "@pranjal",
-    hasAction: false,
-    status: "none",
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "act-init-3",
-    id: "act-init-3",
-    type: "star",
-    user: "Elena Rostova",
-    handle: "@elena_codes",
-    initials: "ER",
-    action: "bookmarked your code snippet",
-    target: "tokens.config.css",
-    recipientHandle: "@pranjal",
-    hasAction: false,
-    status: "none",
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    _id: "act-init-4",
-    id: "act-init-4",
-    type: "collab",
-    user: "Rahul Sharma",
-    handle: "@rahul",
-    initials: "RS",
-    action: "invited you to collaborate on",
-    target: "AI Resume Analyzer & Matchmaker",
-    role: "Lead Fullstack Reviewer",
-    recipientHandle: "@pranjal",
-    hasAction: true,
-    status: "pending",
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-];
+let inMemoryActivities = [];
 
 export { inMemoryActivities };
 
 const isDbReady = () => mongoose.connection.readyState === 1;
+
+/**
+ * Automatically creates/initiates a chat conversation between project owner and accepted applicant
+ */
+const ensureChatOnAccepted = async ({
+  applicantHandle,
+  applicantName,
+  applicantAvatar = "",
+  applicantRole = "Team Contributor",
+  applicantInitials = "TC",
+  projectAuthorHandle = "@pranjal",
+  projectAuthorName = "Pranjal Shukla",
+  projectTitle = "Project",
+}) => {
+  if (!applicantHandle) return null;
+  const norm1 = projectAuthorHandle.toLowerCase();
+  const norm2 = applicantHandle.toLowerCase();
+
+  // Check if conversation already exists in memory
+  let existing = inMemoryConversations.find((c) => {
+    const parts = c.participants.map((p) => p.toLowerCase());
+    return parts.includes(norm1) && parts.includes(norm2);
+  });
+
+  const initialMsgText = `Hey ${applicantName || "there"}! I accepted your request to collaborate on ${projectTitle}. Welcome to the team!`;
+
+  if (existing) {
+    existing.project = projectTitle;
+    existing.lastMessage = initialMsgText;
+    existing.lastMessageAt = new Date().toISOString();
+    return existing;
+  }
+
+  const newId = `chat-${Date.now()}`;
+  const newConv = {
+    _id: newId,
+    id: newId,
+    participants: [projectAuthorHandle, applicantHandle],
+    participantDetails: [
+      {
+        name: projectAuthorName,
+        handle: projectAuthorHandle,
+        avatar: "",
+        role: "Project Lead",
+        initials: "PL",
+      },
+      {
+        name: applicantName || applicantHandle.replace("@", ""),
+        handle: applicantHandle,
+        avatar: applicantAvatar || "",
+        role: applicantRole || "Team Contributor",
+        initials: applicantInitials || (applicantName || "TC").slice(0, 2).toUpperCase(),
+      },
+    ],
+    project: projectTitle,
+    lastMessage: initialMsgText,
+    lastMessageAt: new Date().toISOString(),
+    unreadCounts: { [applicantHandle]: 1, [projectAuthorHandle]: 0 },
+  };
+
+  inMemoryConversations.unshift(newConv);
+  inMemoryMessages[newId] = [
+    {
+      _id: `m-${Date.now()}`,
+      id: `m-${Date.now()}`,
+      conversationId: newId,
+      senderHandle: projectAuthorHandle,
+      senderName: projectAuthorName,
+      text: initialMsgText,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  if (isDbReady()) {
+    try {
+      const dbConv = await Conversation.create(newConv);
+      await Message.create({
+        conversationId: dbConv._id.toString(),
+        senderHandle: projectAuthorHandle,
+        senderName: projectAuthorName,
+        text: initialMsgText,
+      });
+    } catch (err) {
+      console.warn("MongoDB chat sync notice:", err.message);
+    }
+  }
+
+  return newConv;
+};
 
 /**
  * @desc Create a new join request and generate activity notification
@@ -332,10 +366,28 @@ export const respondToJoinRequest = async (req, res) => {
         targetAct.status = status;
       }
 
+      let conversation = null;
+      if (status === "accepted") {
+        const applicantHandle = (joinRequest && joinRequest.applicantHandle) || (act && act.handle) || (targetReq && targetReq.applicantHandle) || (targetAct && targetAct.handle) || (activityData && activityData.handle);
+        const applicantName = (joinRequest && joinRequest.applicantName) || (act && act.user) || (targetReq && targetReq.applicantName) || (targetAct && targetAct.user) || (activityData && activityData.user);
+        const applicantRole = (joinRequest && joinRequest.role) || (act && act.role) || (targetReq && targetReq.role) || (targetAct && targetAct.role) || (activityData && activityData.role);
+        const projectTitle = (joinRequest && joinRequest.projectTitle) || (act && act.target) || (targetReq && targetReq.projectTitle) || (targetAct && targetAct.target) || (activityData && activityData.target);
+        const projectAuthorHandle = (joinRequest && joinRequest.projectAuthorHandle) || (act && act.recipientHandle) || (targetReq && targetReq.projectAuthorHandle) || (targetAct && targetAct.recipientHandle) || "@pranjal";
+
+        conversation = await ensureChatOnAccepted({
+          applicantHandle,
+          applicantName,
+          applicantRole,
+          projectTitle,
+          projectAuthorHandle,
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: `Join request marked as ${status}`,
         data: act || joinRequest || { id, status },
+        conversation,
       });
     } else {
       // In-memory update
@@ -370,10 +422,28 @@ export const respondToJoinRequest = async (req, res) => {
         inMemoryActivities.unshift(fallbackAct);
       }
 
+      let conversation = null;
+      if (status === "accepted") {
+        const applicantHandle = (targetReq && targetReq.applicantHandle) || (targetAct && targetAct.handle) || (activityData && activityData.handle);
+        const applicantName = (targetReq && targetReq.applicantName) || (targetAct && targetAct.user) || (activityData && activityData.user);
+        const applicantRole = (targetReq && targetReq.role) || (targetAct && targetAct.role) || (activityData && activityData.role);
+        const projectTitle = (targetReq && targetReq.projectTitle) || (targetAct && targetAct.target) || (activityData && activityData.target);
+        const projectAuthorHandle = (targetReq && targetReq.projectAuthorHandle) || (targetAct && targetAct.recipientHandle) || "@pranjal";
+
+        conversation = await ensureChatOnAccepted({
+          applicantHandle,
+          applicantName,
+          applicantRole,
+          projectTitle,
+          projectAuthorHandle,
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: `Join request marked as ${status} (In-Memory Fallback)`,
         data: targetReq || targetAct || { id, status },
+        conversation,
       });
     }
   } catch (error) {

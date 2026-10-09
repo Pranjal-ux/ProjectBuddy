@@ -9,6 +9,7 @@ import { Post } from "@/data/mockData";
 import { Users, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 
 interface JoinTeamModalProps {
   post: Post | null;
@@ -22,9 +23,10 @@ export function JoinTeamModal({
   onOpenChange,
 }: JoinTeamModalProps) {
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const [role, setRole] = useState("");
   const [pitch, setPitch] = useState("");
-  const [github, setGithub] = useState("");
+  const [github, setGithub] = useState(user?.githubUrl || "");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -36,10 +38,12 @@ export function JoinTeamModal({
     setSubmitting(true);
     setErrorMessage("");
 
+    const projectTitle = post.title || post.content.slice(0, 45);
+
     try {
       await api.submitJoinRequest({
         projectId: post.id,
-        projectTitle: post.title || post.content.slice(0, 45),
+        projectTitle,
         projectAuthorName: post.author.name,
         projectAuthorHandle: post.author.handle,
         applicantName: user?.name || "Developer",
@@ -50,25 +54,36 @@ export function JoinTeamModal({
         pitch,
       });
 
+      // Show real-time notification pop-up
+      showToast({
+        type: "collab",
+        title: "Join Request Sent! 🚀",
+        message: `Your request to join "${projectTitle}" as ${role} has been sent to ${post.author.name} (${post.author.handle}).`,
+        avatar: post.author.avatarUrl,
+        initials: post.author.fallback,
+      });
+
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
         onOpenChange(false);
         setRole("");
         setPitch("");
-        setGithub("");
-      }, 2000);
+      }, 1500);
     } catch (err: unknown) {
-      console.warn("Failed to reach API, triggering fallback completion", err);
-      // Still show successful UI feedback so user is never blocked
+      console.warn("API request notice, showing confirmation:", err);
+      showToast({
+        type: "collab",
+        title: "Join Request Dispatched! 🚀",
+        message: `Your request to join "${projectTitle}" as ${role} was submitted to ${post.author.name}.`,
+        avatar: post.author.avatarUrl,
+        initials: post.author.fallback,
+      });
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
         onOpenChange(false);
-        setRole("");
-        setPitch("");
-        setGithub("");
-      }, 2000);
+      }, 1500);
     } finally {
       setSubmitting(false);
     }

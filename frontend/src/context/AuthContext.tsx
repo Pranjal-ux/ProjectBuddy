@@ -45,6 +45,8 @@ const defaultUser: User = {
   bio: "Building developer-first collaboration tools, AI systems, and cloud architectures.",
   initials: "PS",
   skills: ["Next.js", "TypeScript", "Node.js", "MongoDB", "Python", "TailwindCSS"],
+  githubUrl: "https://github.com/pranjalshukla",
+  linkedinUrl: "https://linkedin.com/in/pranjal-shukla",
   followers: ["@schen", "@arivera", "@elena_codes", "@dmarcus"],
   following: ["@schen", "@arivera"],
   stats: {
@@ -65,21 +67,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "register">("login");
-  const [followedHandles, setFollowedHandles] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("projectbuddy_following");
-        if (stored) return JSON.parse(stored);
-      } catch {}
-    }
-    return ["@schen", "@arivera"];
-  });
+  const [followedHandles, setFollowedHandles] = useState<string[]>([
+    "@schen",
+    "@arivera",
+  ]);
 
-  // Load user & token from localStorage on initial render
+  // Load user, token, and followed handles from localStorage on client mount
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem("projectbuddy_token");
       const storedUser = localStorage.getItem("projectbuddy_user");
+      const storedFollowing = localStorage.getItem("projectbuddy_following");
+
+      if (storedFollowing) {
+        try {
+          const parsed = JSON.parse(storedFollowing);
+          if (Array.isArray(parsed)) {
+            setFollowedHandles(parsed);
+          }
+        } catch {}
+      }
 
       if (storedToken && storedUser) {
         setToken(storedToken);
