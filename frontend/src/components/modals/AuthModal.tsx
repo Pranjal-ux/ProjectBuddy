@@ -13,10 +13,6 @@ import {
   Loader2,
   CheckCircle2,
   Sparkles,
-  ArrowLeft,
-  Mail,
-  ShieldCheck,
-  RotateCcw,
 } from "lucide-react";
 
 export function AuthModal() {
@@ -26,8 +22,6 @@ export function AuthModal() {
     closeAuthModal,
     login,
     register,
-    verifyOtp,
-    resendOtp,
   } = useAuth();
 
   // Mode: "login" | "register"
@@ -45,31 +39,12 @@ export function AuthModal() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // OTP Verification state
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpPendingEmail, setOtpPendingEmail] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [resendingOtp, setResendingOtp] = useState(false);
-
   // Sync mode with context
   useEffect(() => {
     setMode(authModalMode);
     setError(null);
     setSuccessMsg(null);
-    setOtpStep(false);
-    setOtpCode("");
   }, [authModalMode, authModalOpen]);
-
-  // Resend cooldown timer
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +65,7 @@ export function AuthModal() {
           return;
         }
 
-        const res = await register({
+        await register({
           name: name.trim(),
           handle: handle.trim(),
           email: email.trim(),
@@ -99,19 +74,11 @@ export function AuthModal() {
           bio: bio.trim() || "Building cool software on ProjectBuddy.",
         });
 
-        if (res.requireOtp) {
-          setOtpPendingEmail(email.trim());
-          setOtpStep(true);
-          setOtpCode("");
-          setResendCooldown(30);
-          setSuccessMsg(`A 6-digit verification code was sent to ${email.trim()}`);
-        } else {
-          setSuccessMsg("Account created successfully! Welcome aboard.");
-          setTimeout(() => {
-            closeAuthModal();
-            resetForm();
-          }, 1000);
-        }
+        setSuccessMsg("Account created successfully! Welcome aboard.");
+        setTimeout(() => {
+          closeAuthModal();
+          resetForm();
+        }, 800);
       } else {
         if (!email.trim() || !password.trim()) {
           setError("Please provide both email/handle and password.");
@@ -124,7 +91,7 @@ export function AuthModal() {
         setTimeout(() => {
           closeAuthModal();
           resetForm();
-        }, 1000);
+        }, 800);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -137,51 +104,6 @@ export function AuthModal() {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode.trim() || otpCode.trim().length < 6) {
-      setError("Please enter the complete 6-digit code.");
-      return;
-    }
-
-    setVerifyingOtp(true);
-    setError(null);
-    setSuccessMsg(null);
-
-    try {
-      await verifyOtp({ email: otpPendingEmail, otp: otpCode.trim() });
-      setSuccessMsg("Email verified! Your account is activated. Signing you in...");
-      setTimeout(() => {
-        closeAuthModal();
-        resetForm();
-      }, 1200);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Invalid or expired verification code.");
-      }
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0 || !otpPendingEmail) return;
-    setResendingOtp(true);
-    setError(null);
-    try {
-      const res = await resendOtp({ email: otpPendingEmail });
-      setResendCooldown(30);
-      setSuccessMsg(res.message || "A new 6-digit code has been sent!");
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError("Failed to resend verification code.");
-    } finally {
-      setResendingOtp(false);
-    }
-  };
-
   const resetForm = () => {
     setName("");
     setHandle("");
@@ -190,344 +112,222 @@ export function AuthModal() {
     setBio("");
     setError(null);
     setSuccessMsg(null);
-    setOtpStep(false);
-    setOtpCode("");
-    setOtpPendingEmail("");
   };
 
   return (
     <Dialog open={authModalOpen} onOpenChange={closeAuthModal}>
       <DialogHeader onClose={closeAuthModal}>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <ProjectBuddyLogo variant="full" size="md" />
-          </div>
-          <div className="flex items-center gap-2">
-            {otpStep ? (
-              <ShieldCheck className="size-5 text-white" />
-            ) : mode === "register" ? (
-              <UserPlus className="size-5 text-white" />
-            ) : (
-              <LogIn className="size-5 text-white" />
-            )}
-            <span>
-              {otpStep
-                ? "Verify Your Email Address"
-                : mode === "register"
-                ? "Create Developer Account"
-                : "Sign In to ProjectBuddy"}
-            </span>
-          </div>
-          <span className="text-xs text-[var(--text-secondary)] font-normal">
-            {otpStep
-              ? `Enter the 6-digit code sent to ${otpPendingEmail}`
-              : mode === "register"
-              ? "Join thousands of builders collaborating on high-impact projects."
-              : "Welcome back! Enter your credentials to access your account."}
-          </span>
+        <div className="flex flex-col items-center gap-2">
+          <ProjectBuddyLogo variant="full" size="md" />
+          <p className="text-xs text-[var(--text-secondary)] font-normal text-center mt-1">
+            {mode === "login"
+              ? "Sign in to connect, share projects, and find collaborators"
+              : "Create your developer profile to start networking"}
+          </p>
         </div>
       </DialogHeader>
 
-      {/* Mode Tabs (Only when not in OTP Step) */}
-      {!otpStep && (
-        <div className="flex border-b border-[var(--border-subtle)] px-6 pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("login");
-              setError(null);
-            }}
-            className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-              mode === "login"
-                ? "border-white text-white font-semibold"
-                : "border-transparent text-[var(--text-secondary)] hover:text-white"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <LogIn className="size-4" />
-              <span>Sign In</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("register");
-              setError(null);
-            }}
-            className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-              mode === "register"
-                ? "border-white text-white font-semibold"
-                : "border-transparent text-[var(--text-secondary)] hover:text-white"
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <UserPlus className="size-4" />
-              <span>Create Account</span>
-            </div>
-          </button>
-        </div>
-      )}
-
-      {otpStep ? (
-        <div className="p-6 flex flex-col gap-4 animate-in fade-in-50">
-          <button
-            type="button"
-            onClick={() => {
-              setOtpStep(false);
-              setError(null);
-              setSuccessMsg(null);
-            }}
-            className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors cursor-pointer w-fit"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Back to edit details</span>
-          </button>
-
-          <div className="text-center py-2">
-            <div className="inline-flex p-3 rounded-2xl bg-white/10 border border-white/20 text-white mb-2">
-              <Mail className="size-7 text-white" />
-            </div>
-            <h3 className="text-base font-semibold text-white">Check your Inbox</h3>
-            <p className="text-xs text-[var(--text-secondary)] max-w-xs mx-auto mt-1 leading-relaxed">
-              We sent a 6-digit verification code to <span className="text-white font-mono font-medium">{otpPendingEmail}</span>. Enter it below to activate your account.
-            </p>
+      {/* Tab Switcher */}
+      <div className="flex border-b border-[var(--border-subtle)] px-6 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setMode("login");
+            setError(null);
+          }}
+          className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+            mode === "login"
+              ? "border-white text-white font-semibold"
+              : "border-transparent text-[var(--text-secondary)] hover:text-white"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <LogIn className="size-4" />
+            <span>Sign In</span>
           </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode("register");
+            setError(null);
+          }}
+          className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+            mode === "register"
+              ? "border-white text-white font-semibold"
+              : "border-transparent text-[var(--text-secondary)] hover:text-white"
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <UserPlus className="size-4" />
+            <span>Create Account</span>
+          </div>
+        </button>
+      </div>
 
-          {error && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+      <div className="p-6 flex flex-col gap-4">
+        {error && (
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-          {successMsg && (
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2.5">
-              <CheckCircle2 className="size-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
+        {successMsg && (
+          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2.5">
+            <CheckCircle2 className="size-4 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
-          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4 mt-1">
-            <div className="flex flex-col items-center gap-2">
-              <label className="text-xs font-mono text-[var(--text-secondary)]">
-                6-Digit Verification Code
-              </label>
-              <input
-                type="text"
-                maxLength={6}
-                autoFocus
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="------"
-                className="w-52 text-center text-2xl font-mono font-bold tracking-[8px] h-12 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-white focus:ring-2 focus:ring-white/20 transition-all placeholder:text-[var(--text-muted)]"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={verifyingOtp || otpCode.length < 6}
-              className="w-full h-11 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {verifyingOtp ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>Verifying Code...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="size-4" />
-                  <span>Verify Email & Create Account</span>
-                </>
-              )}
-            </Button>
-
-            <div className="flex items-center justify-between text-xs pt-1 px-1">
-              <span className="text-[var(--text-muted)]">Didn&apos;t receive the code?</span>
-              <button
-                type="button"
-                disabled={resendCooldown > 0 || resendingOtp}
-                onClick={handleResendOtp}
-                className="text-white hover:underline font-medium flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {resendingOtp ? (
-                  <Loader2 className="size-3 animate-spin" />
-                ) : (
-                  <RotateCcw className="size-3" />
-                )}
-                <span>
-                  {resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : "Resend Code"}
-                </span>
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        <div className="p-6 flex flex-col gap-4">
-          {error && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2.5">
-              <CheckCircle2 className="size-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* Regular Email/Password Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-            {mode === "register" && (
-              <>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-mono text-[var(--text-secondary)]">
-                    Full Name <span className="text-white">*</span>
-                  </label>
-                  <Input
-                    placeholder="e.g. Alex Rivers"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="h-10"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-mono text-[var(--text-secondary)]">
-                    Username / Handle <span className="text-white">*</span>
-                  </label>
-                  <Input
-                    placeholder="e.g. @arivers"
-                    value={handle}
-                    onChange={(e) => setHandle(e.target.value)}
-                    required
-                    className="h-10"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-mono text-[var(--text-secondary)]">
-                    Role / Title
-                  </label>
-                  <Input
-                    placeholder="e.g. AI Engineer, Fullstack Dev"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="h-10"
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono text-[var(--text-secondary)]">
-                {mode === "register" ? "Email Address" : "Email or Handle"}{" "}
-                <span className="text-white">*</span>
-              </label>
-              <Input
-                type={mode === "register" ? "email" : "text"}
-                placeholder={
-                  mode === "register"
-                    ? "you@example.com"
-                    : "you@example.com or @handle"
-                }
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-10"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-mono text-[var(--text-secondary)]">
-                Password <span className="text-white">*</span>
-              </label>
-              <Input
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-10"
-              />
-            </div>
-
-            {mode === "register" && (
+        {/* Regular Email/Password Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+          {mode === "register" && (
+            <>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-mono text-[var(--text-secondary)]">
-                  Short Bio
+                  Full Name <span className="text-white">*</span>
                 </label>
                 <Input
-                  placeholder="What are you interested in building?"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="e.g. Alex Rivers"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
                   className="h-10"
                 />
               </div>
-            )}
 
-            <div className="pt-1">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin text-black" />
-                    <span>
-                      {mode === "register"
-                        ? "Creating Account..."
-                        : "Signing In..."}
-                    </span>
-                  </>
-                ) : mode === "register" ? (
-                  <>
-                    <Sparkles className="size-4" />
-                    <span>Create Account</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="size-4" />
-                    <span>Sign In</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-mono text-[var(--text-secondary)]">
+                  Username / Handle <span className="text-white">*</span>
+                </label>
+                <Input
+                  placeholder="e.g. @arivers"
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
 
-          {/* Mode Toggle Link */}
-          <div className="text-center pt-1">
-            {mode === "register" ? (
-              <p className="text-xs text-[var(--text-muted)]">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => setMode("login")}
-                  className="text-white hover:underline font-medium cursor-pointer"
-                >
-                  Sign In
-                </button>
-              </p>
-            ) : (
-              <p className="text-xs text-[var(--text-muted)]">
-                Don&apos;t have an account yet?{" "}
-                <button
-                  type="button"
-                  onClick={() => setMode("register")}
-                  className="text-white hover:underline font-medium cursor-pointer"
-                >
-                  Create Account
-                </button>
-              </p>
-            )}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-mono text-[var(--text-secondary)]">
+                  Role / Title
+                </label>
+                <Input
+                  placeholder="e.g. AI Engineer, Fullstack Dev"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-[var(--text-secondary)]">
+              {mode === "register" ? "Email Address" : "Email or Handle"}{" "}
+              <span className="text-white">*</span>
+            </label>
+            <Input
+              type={mode === "register" ? "email" : "text"}
+              placeholder={
+                mode === "register"
+                  ? "you@example.com"
+                  : "you@example.com or @handle"
+              }
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-10"
+            />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-mono text-[var(--text-secondary)]">
+              Password <span className="text-white">*</span>
+            </label>
+            <Input
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-10"
+            />
+          </div>
+
+          {mode === "register" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-mono text-[var(--text-secondary)]">
+                Short Bio
+              </label>
+              <Input
+                placeholder="What are you interested in building?"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          )}
+
+          <div className="pt-1">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin text-black" />
+                  <span>
+                    {mode === "register"
+                      ? "Creating Account..."
+                      : "Signing In..."}
+                  </span>
+                </>
+              ) : mode === "register" ? (
+                <>
+                  <Sparkles className="size-4" />
+                  <span>Create Account</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="size-4" />
+                  <span>Sign In</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {/* Mode Toggle Link */}
+        <div className="text-center pt-1">
+          {mode === "register" ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className="text-white hover:underline font-medium cursor-pointer"
+              >
+                Sign In
+              </button>
+            </p>
+          ) : (
+            <p className="text-xs text-[var(--text-muted)]">
+              Don&apos;t have an account yet?{" "}
+              <button
+                type="button"
+                onClick={() => setMode("register")}
+                className="text-white hover:underline font-medium cursor-pointer"
+              >
+                Create Account
+              </button>
+            </p>
+          )}
         </div>
-      )}
+      </div>
     </Dialog>
   );
 }

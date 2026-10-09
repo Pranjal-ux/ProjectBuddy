@@ -102,49 +102,47 @@ export const registerUser = async (req, res) => {
         });
       }
 
-      // Generate 6-digit OTP code
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
       // Hash password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      // Store pending registration with OTP in database
-      await OtpVerification.findOneAndUpdate(
-        { email: normalizedEmail, type: "register" },
-        {
-          email: normalizedEmail,
-          otp,
-          type: "register",
-          pendingUserData: {
-            name: name.trim(),
-            handle: formattedHandle,
-            email: normalizedEmail,
-            password: hashedPassword,
-            role: role?.trim() || "Fullstack Developer",
-            bio: bio?.trim() || "Building cool software on ProjectBuddy.",
-            initials,
-            skills: ["React", "TypeScript", "Node.js"],
-          },
-          expiresAt,
-        },
-        { upsert: true, new: true }
-      );
-
-      // Send OTP via email (or dev console fallback)
-      await sendOtpEmail({
-        to: normalizedEmail,
-        otp,
+      const newUser = await User.create({
         name: name.trim(),
+        handle: formattedHandle,
+        email: normalizedEmail,
+        password: hashedPassword,
+        role: role?.trim() || "Fullstack Developer",
+        bio: bio?.trim() || "Building cool software on ProjectBuddy.",
+        initials,
+        skills: ["React", "TypeScript", "Node.js"],
+        isEmailVerified: true,
+        authProvider: "local",
       });
 
-      return res.status(200).json({
+      const token = generateToken(newUser._id, newUser.handle, newUser.email);
+
+      return res.status(201).json({
         success: true,
-        requireOtp: true,
-        email: normalizedEmail,
-        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox and enter it to complete registration.`,
+        message: "Account created successfully!",
+        token,
+        user: {
+          id: newUser._id,
+          _id: newUser._id,
+          name: newUser.name,
+          handle: newUser.handle,
+          email: newUser.email,
+          role: newUser.role,
+          bio: newUser.bio,
+          initials: newUser.initials,
+          skills: newUser.skills,
+          avatar: newUser.avatar,
+          banner: newUser.banner,
+          followersCount: 0,
+          followingCount: 0,
+          following: [],
+          followers: [],
+          stats: newUser.stats || { projectsJoined: 0, snippetsShared: 0, upvotes: 0 },
+        },
       });
     } else {
       // In-memory fallback
@@ -158,7 +156,6 @@ export const registerUser = async (req, res) => {
         });
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -179,17 +176,13 @@ export const registerUser = async (req, res) => {
       };
       inMemoryUsers.push(newUser);
 
-      await sendOtpEmail({
-        to: normalizedEmail,
-        otp,
-        name: name.trim(),
-      });
+      const token = generateToken(mockId, formattedHandle, normalizedEmail);
 
-      return res.status(200).json({
+      return res.status(201).json({
         success: true,
-        requireOtp: true,
-        email: normalizedEmail,
-        message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+        message: "Account created successfully!",
+        token,
+        user: newUser,
       });
     }
   } catch (error) {
