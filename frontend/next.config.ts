@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     const rawBackendUrl =
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.BACKEND_URL ||
-      "http://127.0.0.1:5000/api";
+      "https://projectbuddy-988y.onrender.com/api";
     const backendHost = rawBackendUrl.replace(/\/api\/?$/, "").replace(/\/+$/, "");
 
     return [
