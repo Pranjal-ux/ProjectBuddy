@@ -199,7 +199,7 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
   // 2. VERCEL MAILER BRIDGE: Uses HTTPS (Port 443) from Render -> Vercel Next.js API Route -> Gmail SMTP
   // This bypasses Render Free Tier's blocked SMTP ports (465/587) while sending directly from your Gmail account!
   const isRender = !!process.env.RENDER || process.env.NODE_ENV === "production" || process.env.USE_VERCEL_MAILER === "true";
-  const vercelMailerUrl = process.env.VERCEL_MAILER_URL?.trim() || "https://projectbuddyapp.vercel.app/api/send-otp";
+  const vercelMailerUrl = process.env.VERCEL_MAILER_URL?.trim() || "https://projectbuddyapp.vercel.app/mailer/send-otp";
 
   const tryVercelBridge = async () => {
     try {
