@@ -1,0 +1,22 @@
+{
+  "name": "ProjectBuddy — Developer Network & Project Collaboration",
+  "short_name": "ProjectBuddy",
+  "description": "Connect, discover open-source projects, recruit teammates, and share code snippets in high-contrast developer aesthetic.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0e14",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/projectbuddy-emblem-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/projectbuddy-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -284,8 +284,8 @@ function HomeContent() {
                     {feedFilter === "following"
                       ? "No posts from developers you follow yet. Follow buddies in the sidebar or Discover section to see their updates here!"
                       : searchQuery
-                      ? `No posts matched "${searchQuery}"`
-                      : "No posts available in this view."}
+                        ? `No posts matched "${searchQuery}"`
+                        : "No posts available in this view."}
                   </p>
                   {feedFilter === "following" ? (
                     <button
