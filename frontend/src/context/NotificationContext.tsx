@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import { CheckCircle2, Bell, MessageSquare, Sparkles, X, Users, ArrowRight } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,7 @@ const playNotificationChime = () => {
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
 
   const dismissToast = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -66,7 +67,25 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       onAction,
       durationMs = 5000,
     }: Omit<ToastNotification, "id">) => {
-      const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      // Loop protection & deduplication
+      const notifKey = `${type}::${title}::${message}`;
+      const now = Date.now();
+      const lastShown = recentToastsRef.current.get(notifKey);
+
+      // Prevent identical notification loop if fired within 4 seconds
+      if (lastShown && now - lastShown < 4000) {
+        return;
+      }
+      recentToastsRef.current.set(notifKey, now);
+
+      // Clean up stale cache entries older than 10s
+      for (const [key, timestamp] of recentToastsRef.current.entries()) {
+        if (now - timestamp > 10000) {
+          recentToastsRef.current.delete(key);
+        }
+      }
+
+      const id = `toast-${now}-${Math.random().toString(36).substring(2, 6)}`;
       const newNotif: ToastNotification = {
         id,
         type,

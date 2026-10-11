@@ -1,5 +1,7 @@
 export interface Post {
   id: string;
+  customId?: string;
+  _id?: string;
   author: {
     name: string;
     handle: string;

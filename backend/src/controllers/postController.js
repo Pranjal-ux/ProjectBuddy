@@ -42,6 +42,9 @@ const findPostById = async (id) => {
   if (!post && mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id)) {
     post = await Post.findById(id);
   }
+  if (!post) {
+    post = await Post.findOne({ _id: id }).catch(() => null);
+  }
   return post;
 };
 
@@ -115,7 +118,17 @@ export const getPosts = async (req, res) => {
  */
 export const createPost = async (req, res) => {
   try {
-    const { title, content, type = "project", tags = [], team, telemetry, codeSnippet } = req.body;
+    const {
+      title,
+      content,
+      type = "project",
+      tags = [],
+      team,
+      telemetry,
+      codeSnippet,
+      customId,
+      id,
+    } = req.body;
 
     const authorName = req.user?.name || req.body.author?.name || "Developer";
     const authorHandle = req.user?.handle || req.body.author?.handle || "@developer";
@@ -123,8 +136,14 @@ export const createPost = async (req, res) => {
     const authorFallback = req.user?.initials || req.body.author?.fallback || "DEV";
     const authorRole = req.user?.role || req.body.author?.role || "Fullstack Engineer";
 
+    const normalizedAuthor = normalizeHandle(authorHandle);
+    const postId = customId || id || `post-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+    // Feature: Auto-like our own post that we post!
+    const initialLikedBy = normalizedAuthor ? [normalizedAuthor] : [];
+
     const newPostData = {
-      customId: `post-${Date.now()}`,
+      customId: postId,
       author: {
         name: authorName,
         handle: authorHandle,
@@ -141,13 +160,13 @@ export const createPost = async (req, res) => {
       telemetry,
       codeSnippet,
       stats: {
-        likes: 0,
+        likes: initialLikedBy.length,
         comments: 0,
         reposts: 0,
         bookmarks: 0,
         shares: 0,
       },
-      likedBy: [],
+      likedBy: initialLikedBy,
       bookmarkedBy: [],
       repostedBy: [],
       commentsList: [],
@@ -257,7 +276,7 @@ export const toggleLike = async (req, res) => {
     }
 
     if (!post.likedBy) post.likedBy = [];
-    const hasLiked = post.likedBy.includes(handle);
+    const hasLiked = post.likedBy.some((h) => normalizeHandle(h) === handle);
 
     if (hasLiked) {
       post.likedBy = post.likedBy.filter((h) => h !== handle);

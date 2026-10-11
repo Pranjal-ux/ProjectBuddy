@@ -49,15 +49,14 @@ export function Sidebar({
   const prevUnreadActivitiesRef = useRef(0);
   const isFirstFetchRef = useRef(true);
   const seenMessagesMapRef = useRef<Record<string, string>>({});
+  const seenActivityIdsRef = useRef<Set<string>>(new Set());
 
-  // Instantly clear notification count as soon as the user opens the tab
+  // Instantly clear notification count badge as soon as the user opens the tab
   useEffect(() => {
     if (activeTab === "messages") {
       setUnreadMessages(0);
-      prevUnreadMessagesRef.current = 0;
     } else if (activeTab === "activity") {
       setUnreadActivities(0);
-      prevUnreadActivitiesRef.current = 0;
     }
   }, [activeTab]);
 
@@ -82,9 +81,18 @@ export function Sidebar({
 
         if (Array.isArray(acts)) {
           const unreadAct = acts.filter((a) => a.status === "pending").length;
-          setUnreadActivities(unreadAct);
-          if (!isFirstFetchRef.current && unreadAct > prevUnreadActivitiesRef.current && activeTab !== "activity") {
-            const latest = acts[0];
+          setUnreadActivities(activeTab === "activity" ? 0 : unreadAct);
+
+          // Track which activities have already been seen
+          const newPendingActs = acts.filter((a) => {
+            const actId = String(a._id || a.id || a.customId || `${a.user}-${a.action}-${a.target}`);
+            const isSeen = seenActivityIdsRef.current.has(actId);
+            seenActivityIdsRef.current.add(actId);
+            return !isSeen && a.status === "pending";
+          });
+
+          if (!isFirstFetchRef.current && newPendingActs.length > 0 && activeTab !== "activity") {
+            const latest = newPendingActs[0];
             showToast({
               type: "collab",
               title: "New Team Activity",
@@ -101,6 +109,8 @@ export function Sidebar({
           const unreadMsg = activeTab === "messages" ? 0 : totalUnread;
           setUnreadMessages(unreadMsg);
 
+          let messageToastedThisTick = false;
+
           // Check if any conversation received a new incoming message
           for (const conv of convs) {
             const convId = conv._id || conv.id;
@@ -111,7 +121,19 @@ export function Sidebar({
 
             const prevMsg = seenMessagesMapRef.current[convId];
 
-            if (!isFirstFetchRef.current && lastMsg && prevMsg !== undefined && prevMsg !== lastMsg) {
+            // ALWAYS record in map so subsequent ticks never repeat the notification!
+            if (lastMsg) {
+              seenMessagesMapRef.current[convId] = lastMsg;
+            }
+
+            if (
+              !isFirstFetchRef.current &&
+              !messageToastedThisTick &&
+              lastMsg &&
+              prevMsg !== undefined &&
+              prevMsg !== lastMsg &&
+              activeTab !== "messages"
+            ) {
               // Extract other participant info
               const otherDetail = conv.participantDetails?.find(
                 (p: any) => p.handle?.toLowerCase().replace(/^@/, "") !== myCleanHandle
@@ -139,18 +161,14 @@ export function Sidebar({
                   }
                 },
               });
-              break; // Pop the latest incoming message
-            }
-
-            // Record latest message in map
-            if (lastMsg) {
-              seenMessagesMapRef.current[convId] = lastMsg;
+              messageToastedThisTick = true;
             }
           }
 
           // Fallback if totalUnread increased but individual message diff didn't trigger
           if (
             !isFirstFetchRef.current &&
+            !messageToastedThisTick &&
             totalUnread > prevUnreadMessagesRef.current &&
             activeTab !== "messages"
           ) {
@@ -191,7 +209,7 @@ export function Sidebar({
             });
           }
 
-          prevUnreadMessagesRef.current = activeTab === "messages" ? 0 : totalUnread;
+          prevUnreadMessagesRef.current = totalUnread;
           isFirstFetchRef.current = false;
         }
       } catch (err) {

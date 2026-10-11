@@ -42,11 +42,14 @@ export function PostComposer({ onPublish }: PostComposerProps) {
       ? tags.split(",").map((t) => t.trim()).filter(Boolean)
       : ["Next.js", "TypeScript"];
 
+    const postId = `post-${Date.now()}`;
     const newPost: Post = {
-      id: `post-${Date.now()}`,
+      id: postId,
+      customId: postId,
       author: {
         name: user?.name || "Developer",
         handle: user?.handle || "@developer",
+        avatarUrl: user?.avatar,
         fallback: user?.initials || "DEV",
         verified: true,
         role: user?.role || "Creator",
@@ -74,12 +77,13 @@ export function PostComposer({ onPublish }: PostComposerProps) {
             }
           : undefined,
       stats: {
-        likes: 0,
+        likes: 1,
         comments: 0,
         reposts: 0,
         bookmarks: 0,
+        shares: 0,
       },
-      userLiked: false,
+      userLiked: true,
     };
 
     onPublish(newPost);

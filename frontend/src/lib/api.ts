@@ -547,9 +547,7 @@ export const api = {
   async createPost(payload: Partial<Post>): Promise<Post> {
     const res = await fetch(`${API_BASE_URL}/posts`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     const json = await res.json().catch(() => ({}));

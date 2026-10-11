@@ -43,7 +43,7 @@ export function PostCard({
   onPostUpdate,
   onAuthorClick,
 }: PostCardProps) {
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const [liked, setLiked] = useState(post.userLiked || false);
   const [likesCount, setLikesCount] = useState(post.stats.likes || 0);
   const [bookmarked, setBookmarked] = useState(post.userBookmarked || false);
@@ -67,6 +67,11 @@ export function PostCard({
   }, [post]);
 
   const toggleLike = async () => {
+    if (!user) {
+      openAuthModal?.();
+      return;
+    }
+
     const nextLiked = !liked;
     const nextCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
     setLiked(nextLiked);
@@ -84,7 +89,8 @@ export function PostCard({
     }
 
     try {
-      const res = await api.toggleLike(post.id, user?.handle, user?.name);
+      const targetId = post.id || post.customId || post._id || "";
+      const res = await api.toggleLike(targetId, user?.handle, user?.name);
       if (res.success) {
         setLiked(res.liked);
         setLikesCount(res.likesCount);

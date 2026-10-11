@@ -37,8 +37,10 @@ export function CreateProjectModal({
       ? tags.split(",").map((t) => t.trim()).filter(Boolean)
       : ["TypeScript", "Next.js"];
 
+    const postId = `proj-${Date.now()}`;
     const newPost: Post = {
-      id: `proj-${Date.now()}`,
+      id: postId,
+      customId: postId,
       author: {
         name: user?.name || "Pranjal Shukla",
         handle: user?.handle || "@pranjal",
@@ -64,6 +66,7 @@ export function CreateProjectModal({
         comments: 0,
         reposts: 0,
         bookmarks: 0,
+        shares: 0,
       },
       userLiked: true,
     };
