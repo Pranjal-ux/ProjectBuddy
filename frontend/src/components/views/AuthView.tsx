@@ -19,6 +19,7 @@ import {
   RotateCcw,
   ArrowLeft,
   KeyRound,
+  ExternalLink,
 } from "lucide-react";
 
 export function AuthView() {
@@ -44,6 +45,7 @@ export function AuthView() {
   const [otpCode, setOtpCode] = useState("");
   const [otpPendingEmail, setOtpPendingEmail] = useState("");
   const [otpPreview, setOtpPreview] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [resendingOtp, setResendingOtp] = useState(false);
@@ -92,6 +94,9 @@ export function AuthView() {
           setResendCooldown(60);
           if (res.otpPreview) {
             setOtpPreview(res.otpPreview);
+          }
+          if (res.previewUrl) {
+            setPreviewUrl(res.previewUrl);
           }
           setSuccessMsg(res.message || "A 6-digit verification code has been sent.");
           return;
@@ -263,6 +268,47 @@ export function AuthView() {
                   <strong className="text-white font-mono">{otpPendingEmail}</strong>.
                 </span>
               </div>
+
+              {otpPreview && (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-amber-400 shrink-0" />
+                      <span className="font-semibold text-amber-300">
+                        Sandbox Verification Code
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOtpCode(otpPreview)}
+                      className="px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-[11px] font-mono text-amber-300 hover:text-white cursor-pointer transition-colors"
+                    >
+                      Auto-fill Code
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                    Resend free tier restricts email delivery to unverified external domains. For testing with this email, your 6-digit code is:
+                  </p>
+                  <div
+                    onClick={() => setOtpCode(otpPreview)}
+                    className="p-2 rounded-lg bg-black/50 border border-amber-500/30 text-center font-mono text-xl font-bold tracking-[0.3em] text-white cursor-pointer hover:bg-black/70 transition-colors"
+                    title="Click to auto-fill code"
+                  >
+                    {otpPreview}
+                  </div>
+                  {previewUrl && (
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-amber-300 hover:text-white underline font-medium pt-1"
+                    >
+                      <span>Open Dummy Web Inbox (Ethereal)</span>
+                      <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                </div>
+              )}
 
               <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">

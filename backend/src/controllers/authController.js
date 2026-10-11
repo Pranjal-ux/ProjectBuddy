@@ -145,7 +145,16 @@ export const registerUser = async (req, res) => {
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
+        emailDelivered: emailResult.sent,
+        deliveryMode: emailResult.mode,
+        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
+        otpPreview: emailResult.otpPreview,
+        previewUrl: emailResult.previewUrl,
+        message: emailResult.mode === "dummy_smtp"
+          ? `Dummy SMTP mode: verification code is ${otp}.`
+          : emailResult.sent
+          ? `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`
+          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
       });
     } else {
       // In-memory fallback
@@ -195,7 +204,16 @@ export const registerUser = async (req, res) => {
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+        emailDelivered: emailResult.sent,
+        deliveryMode: emailResult.mode,
+        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
+        otpPreview: emailResult.otpPreview,
+        previewUrl: emailResult.previewUrl,
+        message: emailResult.mode === "dummy_smtp"
+          ? `Dummy SMTP mode: verification code is ${otp}.`
+          : emailResult.sent
+          ? `A 6-digit verification code has been sent to ${normalizedEmail}.`
+          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
       });
     }
   } catch (error) {
@@ -397,7 +415,16 @@ export const resendRegistrationOtp = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: `New verification code sent to ${normalizedEmail}.`,
+        emailDelivered: emailResult.sent,
+        deliveryMode: emailResult.mode,
+        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
+        otpPreview: emailResult.otpPreview,
+        previewUrl: emailResult.previewUrl,
+        message: emailResult.mode === "dummy_smtp"
+          ? `Dummy SMTP mode: new verification code is ${otp}.`
+          : emailResult.sent
+          ? `New verification code sent to ${normalizedEmail}.`
+          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
       });
     } else {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -407,7 +434,7 @@ export const resendRegistrationOtp = async (req, res) => {
         inMemoryRecord.expiresAt = Date.now() + 10 * 60 * 1000;
       }
 
-      await sendOtpEmail({
+      const emailResult = await sendOtpEmail({
         to: normalizedEmail,
         otp,
         name: inMemoryRecord?.pendingUserData?.name || "Developer",
@@ -415,7 +442,16 @@ export const resendRegistrationOtp = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: `New verification code sent to ${normalizedEmail}.`,
+        emailDelivered: emailResult.sent,
+        deliveryMode: emailResult.mode,
+        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
+        otpPreview: emailResult.otpPreview,
+        previewUrl: emailResult.previewUrl,
+        message: emailResult.mode === "dummy_smtp"
+          ? `Dummy SMTP mode: new verification code is ${otp}.`
+          : emailResult.sent
+          ? `New verification code sent to ${normalizedEmail}.`
+          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
       });
     }
   } catch (error) {

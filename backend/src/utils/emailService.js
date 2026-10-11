@@ -129,21 +129,72 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
   const emailPass = process.env.EMAIL_PASS?.trim().replace(/\s+/g, "");
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
 
-  // 1. FAST PATH: If dummy/test mode is explicitly enabled, return immediately without any external network delay
+  // 1. DUMMY SMTP MODE: Safe, isolated testing for ANY email address (No Google account or domain needed)
   if (isDummy) {
+    let dummyPreviewUrl = null;
+
+    // If custom dummy SMTP credentials are provided (e.g. Mailtrap, Mailpit, MailHog)
+    if (process.env.SMTP_HOST && emailUser && emailPass) {
+      try {
+        const smtpHost = process.env.SMTP_HOST.trim();
+        const smtpPort = parseInt(process.env.SMTP_PORT || "2525", 10);
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: emailUser, pass: emailPass },
+        });
+        await transporter.sendMail({
+          from: `"ProjectBuddy Test" <${process.env.EMAIL_FROM || "test@projectbuddy.dev"}>`,
+          to,
+          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
+          html: getOtpEmailHtml({ name, otp }),
+        });
+        console.log(`✅ [Custom Dummy SMTP] Email accepted by ${smtpHost} for ${to}`);
+      } catch (customSmtpErr) {
+        console.warn(`⚠️ [Custom Dummy SMTP] Error:`, customSmtpErr.message);
+      }
+    } else {
+      // Automatic built-in Ethereal dummy SMTP server (creates instant web inbox preview)
+      try {
+        const testAccount = await nodemailer.createTestAccount();
+        const transporter = nodemailer.createTransport({
+          host: testAccount.smtp.host,
+          port: testAccount.smtp.port,
+          secure: testAccount.smtp.secure,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+        const info = await transporter.sendMail({
+          from: `"ProjectBuddy Test" <no-reply@projectbuddy.dev>`,
+          to,
+          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
+          html: getOtpEmailHtml({ name, otp }),
+        });
+        dummyPreviewUrl = nodemailer.getTestMessageUrl(info);
+      } catch (etherealErr) {
+        // Fallback silently to console display
+      }
+    }
+
     console.log(`\n==========================================================`);
-    console.log(`🧪 [ProjectBuddy Test/Demo Mode Active]`);
+    console.log(`🧪 [Dummy SMTP Active - No Google Account Required]`);
     console.log(`👉 Sent code for: ${to} (${name})`);
     console.log(`🔑 Verification OTP: >>> ${otp} <<<`);
+    if (dummyPreviewUrl) {
+      console.log(`🌐 Open in Dummy Web Inbox: ${dummyPreviewUrl}`);
+    }
     console.log(`⏱️  Valid for: 10 minutes`);
     console.log(`==========================================================\n`);
 
     return {
-      sent: false,
-      mode: "demo",
+      sent: true,
+      mode: "dummy_smtp",
+      previewUrl: dummyPreviewUrl,
       otpPreview: otp,
     };
   }
+
+  let lastError = null;
 
   // 2. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API (never blocked by cloud port filters)
   if (resendApiKey) {
@@ -178,9 +229,20 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
           messageId: resData.id,
         };
       } else {
-        console.warn("⚠️ [Resend API] Error response:", resData);
+        lastError = resData.message || "Resend free tier only allows sending to the account owner";
+        console.warn(`\n==========================================================`);
+        console.warn(`⚠️ [Resend API Delivery Notice for ${to}]`);
+        console.warn(`Status: ${resData.statusCode || "Error"} - ${resData.name || "API Warning"}`);
+        console.warn(`Message: ${lastError}`);
+        if (resData.statusCode === 403 || resData.name === "validation_error") {
+          console.warn(`📌 Resend sandbox (onboarding@resend.dev) restricts delivery to unverified external emails.`);
+          console.warn(`📌 For testing with this email, the 6-digit OTP code is: >>> ${otp} <<<`);
+          console.warn(`📌 To send real emails to ANY address: verify a custom domain at https://resend.com/domains OR configure Gmail SMTP in backend/.env.`);
+        }
+        console.warn(`==========================================================\n`);
       }
     } catch (resendErr) {
+      lastError = resendErr.message;
       console.warn("⚠️ [Resend API] Request error:", resendErr.message);
     }
   }
@@ -226,26 +288,19 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
       };
     } catch (smtpErr) {
       console.warn("⚠️ [SMTP] Could not deliver email:", smtpErr.message);
-      console.log(`🔑 Fallback OTP for ${to}: >>> ${otp} <<<`);
-      return {
-        sent: false,
-        mode: "smtp_timeout_fallback",
-        error: smtpErr.message,
-        otpPreview: otp,
-      };
+      lastError = smtpErr.message;
     }
   }
 
-  // 4. Default immediate fallback if no credentials are configured
+  // 4. Default fallback: when real email delivery is blocked (sandbox restriction or no SMTP)
   console.log(`\n==========================================================`);
-  console.log(`🧪 [ProjectBuddy Fallback Mode - No Real SMTP Configured]`);
-  console.log(`👉 Recipient: ${to} (${name})`);
-  console.log(`🔑 Verification OTP: >>> ${otp} <<<`);
+  console.log(`🔑 Verification OTP for ${to}: >>> ${otp} <<<`);
   console.log(`==========================================================\n`);
 
   return {
     sent: false,
     mode: "fallback",
+    error: lastError || "Email delivery restricted in test mode",
     otpPreview: otp,
   };
 };

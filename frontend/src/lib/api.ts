@@ -67,6 +67,8 @@ export interface AuthResponse {
   requireOtp?: boolean;
   email?: string;
   otpPreview?: string;
+  previewUrl?: string;
+  emailDelivered?: boolean;
 }
 
 export interface ActivityItem {
@@ -177,7 +179,7 @@ export const api = {
   },
 
   // Auth: Resend verification code
-  async resendOtp(payload: { email: string }): Promise<{ success: boolean; message: string; otpPreview?: string }> {
+  async resendOtp(payload: { email: string }): Promise<{ success: boolean; message: string; otpPreview?: string; previewUrl?: string }> {
     const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
       method: "POST",
       headers: {

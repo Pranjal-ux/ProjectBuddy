@@ -11,7 +11,7 @@ interface AuthContextType {
   login: (payload: LoginPayload) => Promise<AuthResponse>;
   register: (payload: RegisterPayload) => Promise<AuthResponse>;
   verifyOtp: (payload: { email: string; otp: string }) => Promise<AuthResponse>;
-  resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string; otpPreview?: string }>;
+  resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string; otpPreview?: string; previewUrl?: string }>;
   googleLogin: (payload: {
     credential?: string;
     accessToken?: string;
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res;
   };
 
-  const resendOtp = async (payload: { email: string }): Promise<{ success: boolean; message: string }> => {
+  const resendOtp = async (payload: { email: string }): Promise<{ success: boolean; message: string; otpPreview?: string; previewUrl?: string }> => {
     return await api.resendOtp(payload);
   };
 
