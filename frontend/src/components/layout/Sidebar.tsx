@@ -314,13 +314,15 @@ export function Sidebar({
       </aside>
 
       {/* ── Mobile Floating Action Button (FAB) for Create Project ── */}
-      <button
-        onClick={openCreateModal}
-        title="Create Project"
-        className="sm:hidden fixed bottom-18 right-4 z-40 size-12 rounded-full bg-white hover:bg-neutral-200 text-black shadow-xl flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <Plus className="size-6 stroke-[2.5]" />
-      </button>
+      {activeTab !== "messages" && (
+        <button
+          onClick={openCreateModal}
+          title="Create Project"
+          className="sm:hidden fixed bottom-18 right-4 z-40 size-12 rounded-full bg-white hover:bg-neutral-200 text-black shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus className="size-6 stroke-[2.5]" />
+        </button>
+      )}
 
       {/* ── Mobile Bottom Navigation Bar ── */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-[var(--bg-surface-low)]/95 backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5">
