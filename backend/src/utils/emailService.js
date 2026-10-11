@@ -196,7 +196,53 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
 
   let lastError = null;
 
-  // 2. REAL GMAIL / SMTP: Prioritize Gmail SMTP when credentials are provided
+  // 2. BREVO (Sendinblue) HTTPS REST API (Uses port 443 - Works seamlessly on Render free tier without domain)
+  const brevoApiKey = process.env.BREVO_API_KEY?.trim();
+  if (brevoApiKey) {
+    try {
+      const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim() || emailUser || "notifications@projectbuddy.dev";
+      const senderName = process.env.BREVO_SENDER_NAME?.trim() || "ProjectBuddy";
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": brevoApiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to, name }],
+          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
+          htmlContent: getOtpEmailHtml({ name, otp }),
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const resData = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        console.log(`✅ [Brevo API] OTP email delivered to ${to}. MessageId: ${resData.messageId}`);
+        return {
+          sent: true,
+          mode: "brevo",
+          messageId: resData.messageId,
+        };
+      } else {
+        lastError = resData.message || "Brevo delivery failed";
+        console.warn(`⚠️ [Brevo API] Could not deliver email:`, lastError);
+      }
+    } catch (brevoErr) {
+      lastError = brevoErr.message;
+      console.warn(`⚠️ [Brevo API] Request error:`, brevoErr.message);
+    }
+  }
+
+  // 3. REAL GMAIL / SMTP: (Works locally or on paid Render; Render Free blocks ports 465/587)
   if (emailUser && emailPass) {
     try {
       const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
@@ -236,7 +282,7 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
     }
   }
 
-  // 3. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API
+  // 4. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API
   if (resendApiKey) {
     try {
       const fromEmail = process.env.EMAIL_FROM || "ProjectBuddy <onboarding@resend.dev>";
