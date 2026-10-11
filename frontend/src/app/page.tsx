@@ -15,17 +15,20 @@ import { ActivityView } from "@/components/views/ActivityView";
 import { ProfileView } from "@/components/views/ProfileView";
 import { BookmarksView } from "@/components/views/BookmarksView";
 import { Post } from "@/data/mockData";
-import { Sun, Moon, Loader2, Sparkles } from "lucide-react";
+import { Sun, Moon, Loader2, Sparkles, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { NotificationProvider } from "@/context/NotificationContext";
+import { NotificationProvider, useNotification } from "@/context/NotificationContext";
 import { AuthModal } from "@/components/modals/AuthModal";
 import { AuthView } from "@/components/views/AuthView";
+import { Dialog, DialogHeader } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 
 function HomeContent() {
-  const { user, isFollowing, isAuthenticated, isLoading } = useAuth();
+  const { user, isFollowing, isAuthenticated, isLoading, logout } = useAuth();
+  const { showToast } = useNotification();
   const [activeTab, setActiveTab] = useState("home");
+  const [isMobileLogoutModalOpen, setIsMobileLogoutModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState<
     "for-you" | "following" | "open-teams" | "showcases"
   >("for-you");
@@ -209,22 +212,34 @@ function HomeContent() {
             <span className="font-bold text-base text-white capitalize">
               {activeTab === "profile" ? "Developer Profile" : activeTab}
             </span>
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface-container)] text-xs font-mono text-[var(--text-secondary)] hover:text-white transition-colors cursor-pointer"
-            >
-              {theme === "oled" ? (
-                <>
-                  <Sun className="size-3.5 text-zinc-300" />
-                  <span>OLED</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="size-3.5 text-zinc-300" />
-                  <span>Dark</span>
-                </>
+            <div className="flex items-center gap-2">
+              {activeTab === "profile" && isAuthenticated && !inspectedUser && (
+                <button
+                  onClick={() => setIsMobileLogoutModalOpen(true)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-mono text-rose-300 hover:bg-rose-500/20 hover:text-white transition-colors cursor-pointer"
+                  title="Log out of ProjectBuddy"
+                >
+                  <LogOut className="size-3.5 text-rose-400" />
+                  <span>Log Out</span>
+                </button>
               )}
-            </button>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface-container)] text-xs font-mono text-[var(--text-secondary)] hover:text-white transition-colors cursor-pointer"
+              >
+                {theme === "oled" ? (
+                  <>
+                    <Sun className="size-3.5 text-zinc-300" />
+                    <span>OLED</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="size-3.5 text-zinc-300" />
+                    <span>Dark</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
@@ -330,6 +345,10 @@ function HomeContent() {
           <ProfileView
             initialInspectedUser={inspectedUser}
             onBackToMyProfile={() => setInspectedUser(null)}
+            onLogout={() => {
+              setInspectedUser(null);
+              setActiveTab("home");
+            }}
           />
         )}
 
@@ -432,6 +451,55 @@ function HomeContent() {
           }
         }}
       />
+
+      {/* Mobile Header Logout Modal */}
+      <Dialog open={isMobileLogoutModalOpen} onOpenChange={setIsMobileLogoutModalOpen}>
+        <div className="flex flex-col gap-4">
+          <DialogHeader onClose={() => setIsMobileLogoutModalOpen(false)}>
+            <div className="flex items-center gap-2 text-white">
+              <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <LogOut className="size-4" />
+              </span>
+              <span>Confirm Log Out</span>
+            </div>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2 py-2">
+            <p className="text-sm text-zinc-300">
+              Are you sure you want to log out of your ProjectBuddy account?
+            </p>
+            <p className="text-xs text-[var(--text-muted)]">
+              You will need to sign back in to create projects, reply to chats, and collaborate with teams.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border-subtle)]">
+            <button
+              onClick={() => setIsMobileLogoutModalOpen(false)}
+              className="px-3.5 py-2 rounded-xl border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-container)] text-xs text-zinc-300 hover:text-white cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsMobileLogoutModalOpen(false);
+                logout();
+                showToast({
+                  type: "info",
+                  title: "Signed Out",
+                  message: "You have successfully logged out of ProjectBuddy.",
+                });
+                setInspectedUser(null);
+                setActiveTab("home");
+              }}
+              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white flex items-center gap-2 cursor-pointer shadow-md"
+            >
+              <LogOut className="size-3.5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

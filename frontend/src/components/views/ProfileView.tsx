@@ -25,9 +25,13 @@ import {
   ArrowLeft,
   Eye,
   X,
+  LogOut,
+  Shield,
 } from "lucide-react";
 import { GithubIcon, LinkedinIcon, TwitterIcon } from "@/components/ui/BrandIcons";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
+import { Dialog, DialogHeader } from "@/components/ui/dialog";
 import { api, User as UserType } from "@/lib/api";
 import { EditPhotoModal } from "@/components/profile/EditPhotoModal";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
@@ -36,11 +40,13 @@ import { FollowListModal } from "@/components/profile/FollowListModal";
 interface ProfileViewProps {
   initialInspectedUser?: UserType | null;
   onBackToMyProfile?: () => void;
+  onLogout?: () => void;
 }
 
 export function ProfileView({
   initialInspectedUser = null,
   onBackToMyProfile,
+  onLogout,
 }: ProfileViewProps) {
   const {
     user: myUser,
@@ -50,7 +56,9 @@ export function ProfileView({
     updateUserProfile,
     isFollowing,
     toggleFollowUser,
+    logout,
   } = useAuth();
+  const { showToast } = useNotification();
 
   // Selected developer profile currently being viewed (null = viewing authenticated user's own profile)
   const [inspectedUser, setInspectedUser] = useState<UserType | null>(initialInspectedUser);
@@ -70,6 +78,18 @@ export function ProfileView({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<"followers" | "following">("followers");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    logout();
+    showToast({
+      type: "info",
+      title: "Signed Out",
+      message: "You have successfully logged out of ProjectBuddy.",
+    });
+    onLogout?.();
+  };
 
   // Projects state
   const [backendProjects, setBackendProjects] = useState<any[]>([]);
@@ -375,6 +395,17 @@ export function ProfileView({
                   >
                     <Eye className="size-3.5 text-zinc-400" />
                     <span className="hidden sm:inline">Public View</span>
+                  </Button>
+
+                  {/* Log Out Button for Mobile & Desktop */}
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsLogoutModalOpen(true)}
+                    className="text-xs h-8 sm:h-9 border-rose-500/30 hover:border-rose-500/60 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
+                    title="Log Out of ProjectBuddy"
+                  >
+                    <LogOut className="size-3.5 text-rose-400" />
+                    <span>Log Out</span>
                   </Button>
                 </>
               )}
@@ -825,6 +856,51 @@ export function ProfileView({
         </div>
       </div>
 
+      {/* Account & Session Security Section (Own Profile Only) */}
+      {isOwnProfile && isAuthenticated && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/80 text-zinc-300">
+                <Shield className="size-4 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white tracking-tight">
+                  Account & Session
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Manage your authenticated session and login security
+                </p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Active Session
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)]">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-semibold text-white truncate">
+                Signed in as {activeUser?.name || "Developer"}
+              </span>
+              <span className="text-xs text-[var(--text-muted)] font-mono truncate">
+                {activeUser?.email || `${activeUser?.handle?.replace("@", "") || "user"}@projectbuddy.dev`} · {activeUser?.handle}
+              </span>
+            </div>
+
+            <Button
+              variant="destructive"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="w-full sm:w-auto text-xs h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-colors shrink-0"
+            >
+              <LogOut className="size-3.5" />
+              <span>Log Out of ProjectBuddy</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       <EditProfileModal
         isOpen={isProfileModalOpen}
@@ -853,6 +929,63 @@ export function ProfileView({
           setInspectedUser(selectedDev);
         }}
       />
+
+      {/* Logout Confirmation Modal */}
+      <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+        <div className="flex flex-col gap-4">
+          <DialogHeader onClose={() => setIsLogoutModalOpen(false)}>
+            <div className="flex items-center gap-2 text-white">
+              <span className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <LogOut className="size-4" />
+              </span>
+              <span>Confirm Log Out</span>
+            </div>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2 py-2">
+            <p className="text-sm text-zinc-300">
+              Are you sure you want to log out of your ProjectBuddy account?
+            </p>
+            <div className="p-3 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex items-center gap-3 mt-1">
+              <Avatar
+                src={myUser?.avatar}
+                fallback={myUser?.initials || "DEV"}
+                size="sm"
+                className="ring-1 ring-white/10"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-white truncate">
+                  {myUser?.name || "Developer"}
+                </span>
+                <span className="text-[11px] font-mono text-[var(--text-muted)] truncate">
+                  {myUser?.handle || "@developer"}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              You will need to sign back in to create projects, reply to chats, and collaborate with teams.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border-subtle)]">
+            <Button
+              variant="outline"
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="text-xs h-9 px-4 rounded-xl border-[var(--border-subtle)] hover:bg-[var(--bg-surface-container)] text-zinc-300 hover:text-white cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmLogout}
+              className="text-xs h-9 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold flex items-center gap-2 cursor-pointer shadow-md"
+            >
+              <LogOut className="size-3.5" />
+              <span>Log Out</span>
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

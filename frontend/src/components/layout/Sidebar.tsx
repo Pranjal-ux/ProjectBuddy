@@ -278,10 +278,10 @@ export function Sidebar({
               </button>
             </div>
           ) : (
-            <div className="p-2 lg:p-2.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex items-center justify-between hover:border-[var(--border-strong)] transition-colors">
+            <div className="p-2 lg:p-2.5 rounded-xl bg-[var(--bg-surface-container)] border border-[var(--border-subtle)] flex flex-col lg:flex-row items-center justify-between gap-1.5 hover:border-[var(--border-strong)] transition-colors">
               <div
                 onClick={() => setActiveTab("profile")}
-                className="flex items-center gap-2 lg:gap-2.5 min-w-0 cursor-pointer flex-1"
+                className="flex items-center gap-2 lg:gap-2.5 min-w-0 cursor-pointer lg:flex-1 justify-center lg:justify-start"
               >
                 <div className="relative shrink-0">
                   <Avatar
@@ -304,7 +304,7 @@ export function Sidebar({
               <button
                 onClick={logout}
                 title="Log Out"
-                className="hidden lg:flex p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                className="flex p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 <LogOut className="size-3.5" />
               </button>
