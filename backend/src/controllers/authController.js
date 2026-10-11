@@ -141,20 +141,18 @@ export const registerUser = async (req, res) => {
         name: name.trim(),
       });
 
+      if (!emailResult.sent) {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to deliver verification code to ${normalizedEmail}. ${emailResult.error || "Please try again later."}`,
+        });
+      }
+
       return res.status(200).json({
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        emailDelivered: emailResult.sent,
-        deliveryMode: emailResult.mode,
-        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
-        otpPreview: emailResult.otpPreview,
-        previewUrl: emailResult.previewUrl,
-        message: emailResult.mode === "dummy_smtp"
-          ? `Dummy SMTP mode: verification code is ${otp}.`
-          : emailResult.sent
-          ? `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`
-          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
       });
     } else {
       // In-memory fallback
@@ -200,20 +198,18 @@ export const registerUser = async (req, res) => {
         name: name.trim(),
       });
 
+      if (!emailResult.sent) {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to deliver verification code to ${normalizedEmail}. ${emailResult.error || "Please try again later."}`,
+        });
+      }
+
       return res.status(200).json({
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        emailDelivered: emailResult.sent,
-        deliveryMode: emailResult.mode,
-        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
-        otpPreview: emailResult.otpPreview,
-        previewUrl: emailResult.previewUrl,
-        message: emailResult.mode === "dummy_smtp"
-          ? `Dummy SMTP mode: verification code is ${otp}.`
-          : emailResult.sent
-          ? `A 6-digit verification code has been sent to ${normalizedEmail}.`
-          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
       });
     }
   } catch (error) {
@@ -413,18 +409,16 @@ export const resendRegistrationOtp = async (req, res) => {
         name: record.pendingUserData?.name || "Developer",
       });
 
+      if (!emailResult.sent) {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to deliver new verification code to ${normalizedEmail}. ${emailResult.error || "Please try again."}`,
+        });
+      }
+
       return res.status(200).json({
         success: true,
-        emailDelivered: emailResult.sent,
-        deliveryMode: emailResult.mode,
-        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
-        otpPreview: emailResult.otpPreview,
-        previewUrl: emailResult.previewUrl,
-        message: emailResult.mode === "dummy_smtp"
-          ? `Dummy SMTP mode: new verification code is ${otp}.`
-          : emailResult.sent
-          ? `New verification code sent to ${normalizedEmail}.`
-          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
+        message: `A new verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
       });
     } else {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -440,18 +434,16 @@ export const resendRegistrationOtp = async (req, res) => {
         name: inMemoryRecord?.pendingUserData?.name || "Developer",
       });
 
+      if (!emailResult.sent) {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to deliver new verification code to ${normalizedEmail}. ${emailResult.error || "Please try again."}`,
+        });
+      }
+
       return res.status(200).json({
         success: true,
-        emailDelivered: emailResult.sent,
-        deliveryMode: emailResult.mode,
-        deliveryWarning: !emailResult.sent ? emailResult.error : undefined,
-        otpPreview: emailResult.otpPreview,
-        previewUrl: emailResult.previewUrl,
-        message: emailResult.mode === "dummy_smtp"
-          ? `Dummy SMTP mode: new verification code is ${otp}.`
-          : emailResult.sent
-          ? `New verification code sent to ${normalizedEmail}.`
-          : `Notice: Test mode restricts delivery to external emails. Your verification code is: ${otp}`,
+        message: `A new verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
       });
     }
   } catch (error) {
