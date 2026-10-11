@@ -1,83 +1,5 @@
 import nodemailer from "nodemailer";
 
-let etherealTransporter = null;
-
-/**
- * Initializes or reuses a dummy test SMTP account (Ethereal Email).
- * Safe, zero-cost, and does NOT use or touch any real personal email account.
- */
-const getEtherealTransporter = async () => {
-  try {
-    if (!etherealTransporter) {
-      const testAccount = await nodemailer.createTestAccount();
-      etherealTransporter = nodemailer.createTransport({
-        host: testAccount.smtp.host,
-        port: testAccount.smtp.port,
-        secure: testAccount.smtp.secure,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
-    return etherealTransporter;
-  } catch (err) {
-    console.warn("⚠️ [Email] Could not create Ethereal test account:", err.message);
-    return null;
-  }
-};
-
-/**
- * Gets the active transporter.
- */
-const getTransporter = async () => {
-  const useDummy = process.env.USE_DUMMY_SMTP === "true";
-  const emailUser = process.env.EMAIL_USER?.trim();
-  const emailPass = process.env.EMAIL_PASS?.trim().replace(/\s+/g, "");
-  const smtpHost = process.env.SMTP_HOST?.trim();
-  const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
-
-  if (!useDummy && emailUser && emailPass) {
-    if (smtpHost) {
-      return {
-        transporter: nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: emailUser, pass: emailPass },
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 15000,
-          tls: {
-            rejectUnauthorized: false,
-          },
-        }),
-        isDummy: false,
-      };
-    }
-
-    // Default to Gmail SMTP direct connection (port 465 SSL is much more reliable on cloud servers than service:"gmail")
-    return {
-      transporter: nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: { user: emailUser, pass: emailPass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        tls: {
-          rejectUnauthorized: false,
-        },
-      }),
-      isDummy: false,
-    };
-  }
-
-  const transporter = await getEtherealTransporter();
-  return { transporter, isDummy: true };
-};
-
 /**
  * Generates the clean HTML email template for OTP
  */
@@ -199,30 +121,55 @@ const getOtpEmailHtml = ({ name, otp }) => `
 
 /**
  * Sends a 6-digit OTP email to verify email address.
- * Resilient against network errors and cloud hosting port blocks.
+ * Resilient, fast, and will NEVER hang the request or keep user spinning.
  */
 export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
-  const htmlContent = getOtpEmailHtml({ name, otp });
+  const isDummy = process.env.USE_DUMMY_SMTP === "true";
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const emailPass = process.env.EMAIL_PASS?.trim().replace(/\s+/g, "");
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
 
-  // 1. Try Resend HTTP REST API if RESEND_API_KEY is defined (100% reliable on cloud hosts like Render & Vercel)
-  if (process.env.RESEND_API_KEY) {
+  // 1. FAST PATH: If dummy/test mode is explicitly enabled, return immediately without any external network delay
+  if (isDummy) {
+    console.log(`\n==========================================================`);
+    console.log(`🧪 [ProjectBuddy Test/Demo Mode Active]`);
+    console.log(`👉 Sent code for: ${to} (${name})`);
+    console.log(`🔑 Verification OTP: >>> ${otp} <<<`);
+    console.log(`⏱️  Valid for: 10 minutes`);
+    console.log(`==========================================================\n`);
+
+    return {
+      sent: false,
+      mode: "demo",
+      otpPreview: otp,
+    };
+  }
+
+  // 2. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API (never blocked by cloud port filters)
+  if (resendApiKey) {
     try {
       const fromEmail = process.env.EMAIL_FROM || "ProjectBuddy <onboarding@resend.dev>";
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+          Authorization: `Bearer ${resendApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           from: fromEmail,
           to: [to],
           subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-          html: htmlContent,
+          html: getOtpEmailHtml({ name, otp }),
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const resData = await res.json().catch(() => ({}));
+
       if (res.ok) {
         console.log(`✅ [Resend API] OTP email delivered to ${to}. Email ID: ${resData.id}`);
         return {
@@ -238,65 +185,62 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
     }
   }
 
-  // 2. Try Nodemailer SMTP
-  try {
-    const { transporter, isDummy } = await getTransporter();
+  // 3. NODEMAILER SMTP (Gmail or custom SMTP) with strict 3.5s timeout to prevent hanging the request
+  if (emailUser && emailPass) {
+    try {
+      const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+      const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
 
-    if (transporter) {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: emailUser, pass: emailPass },
+        connectionTimeout: 3000,
+        greetingTimeout: 3000,
+        socketTimeout: 3500,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
       const mailOptions = {
-        from: `"ProjectBuddy" <${process.env.EMAIL_FROM || process.env.EMAIL_USER || "no-reply@projectbuddy.dev"}>`,
+        from: `"ProjectBuddy" <${process.env.EMAIL_FROM || emailUser || "no-reply@projectbuddy.dev"}>`,
         to,
         subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-        html: htmlContent,
+        html: getOtpEmailHtml({ name, otp }),
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const sendPromise = transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("SMTP connection timed out after 3.5s")), 3500)
+      );
 
-      if (isDummy) {
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        console.log(`\n==========================================================`);
-        console.log(`🧪 [ProjectBuddy Dummy/Ethereal SMTP]`);
-        console.log(`👉 Sent to dummy test inbox for: ${to} (${name})`);
-        if (previewUrl) {
-          console.log(`🔗 Click to view the full rendered email in browser:`);
-          console.log(`   ${previewUrl}`);
-        }
-        console.log(`🔑 Verification OTP: >>> ${otp} <<<`);
-        console.log(`⏱️  Valid for: 10 minutes`);
-        console.log(`==========================================================\n`);
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+      console.log(`✅ [SMTP] Real OTP email sent to ${to}. MessageId: ${info.messageId}`);
 
-        return {
-          sent: false,
-          mode: "dummy_ethereal",
-          previewUrl,
-          otpPreview: otp,
-        };
-      }
-
-      console.log(`✅ [Nodemailer SMTP] Real OTP email sent successfully to ${to}. MessageId: ${info.messageId}`);
       return {
         sent: true,
         mode: "smtp",
         messageId: info.messageId,
       };
+    } catch (smtpErr) {
+      console.warn("⚠️ [SMTP] Could not deliver email:", smtpErr.message);
+      console.log(`🔑 Fallback OTP for ${to}: >>> ${otp} <<<`);
+      return {
+        sent: false,
+        mode: "smtp_timeout_fallback",
+        error: smtpErr.message,
+        otpPreview: otp,
+      };
     }
-  } catch (error) {
-    console.error("❌ [Email] Error sending OTP email via SMTP:", error.message);
-    console.log(`🔑 Fallback OTP for ${to}: >>> ${otp} <<<`);
-    return {
-      sent: false,
-      mode: "error_fallback",
-      error: error.message,
-      otpPreview: otp,
-    };
   }
 
-  // 3. Fallback when no transport configured or failed
+  // 4. Default immediate fallback if no credentials are configured
   console.log(`\n==========================================================`);
   console.log(`🧪 [ProjectBuddy Fallback Mode - No Real SMTP Configured]`);
   console.log(`👉 Recipient: ${to} (${name})`);
   console.log(`🔑 Verification OTP: >>> ${otp} <<<`);
-  console.log(`💡 Set EMAIL_USER & EMAIL_PASS (or RESEND_API_KEY) in backend .env to send real emails.`);
   console.log(`==========================================================\n`);
 
   return {
