@@ -115,9 +115,11 @@ const getOtpEmailHtml = ({ name, otp }) => `
       &copy; ${new Date().getFullYear()} ProjectBuddy Dev Network. All rights reserved.
     </div>
   </div>
-</body>
 </html>
 `;
+
+const getOtpEmailText = ({ name, otp }) =>
+  `Hello ${name},\n\nYour ProjectBuddy verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this verification code, please ignore this email.\n\n— ProjectBuddy Developer Network`;
 
 /**
  * Sends a 6-digit OTP email to verify email address.
@@ -128,6 +130,9 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
   const emailUser = process.env.EMAIL_USER?.trim();
   const emailPass = process.env.EMAIL_PASS?.trim().replace(/\s+/g, "");
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
+  const emailSubject = `ProjectBuddy verification code: ${otp}`;
+  const textContent = getOtpEmailText({ name, otp });
+  const htmlContent = getOtpEmailHtml({ name, otp });
 
   // 1. DUMMY SMTP MODE: Safe, isolated testing for ANY email address (No Google account or domain needed)
   if (isDummy) {
@@ -145,10 +150,11 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
           auth: { user: emailUser, pass: emailPass },
         });
         await transporter.sendMail({
-          from: `"ProjectBuddy Test" <${process.env.EMAIL_FROM || "test@projectbuddy.dev"}>`,
-          to,
-          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-          html: getOtpEmailHtml({ name, otp }),
+          from: `"ProjectBuddy" <${process.env.EMAIL_FROM || "test@projectbuddy.dev"}>`,
+          to: to.trim(),
+          subject: emailSubject,
+          text: textContent,
+          html: htmlContent,
         });
         console.log(`✅ [Custom Dummy SMTP] Email accepted by ${smtpHost} for ${to}`);
       } catch (customSmtpErr) {
@@ -212,9 +218,10 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          to,
+          to: to.trim(),
           otp,
           name,
+          text: textContent,
           secret: process.env.INTERNAL_MAILER_SECRET || "pb_mailer_secure_bridge_2026",
         }),
         signal: controller.signal,
@@ -266,9 +273,10 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
         },
         body: JSON.stringify({
           sender: { name: senderName, email: senderEmail },
-          to: [{ email: to, name }],
-          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-          htmlContent: getOtpEmailHtml({ name, otp }),
+          to: [{ email: to.trim(), name }],
+          subject: emailSubject,
+          textContent,
+          htmlContent,
         }),
         signal: controller.signal,
       });
@@ -314,9 +322,15 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
 
       const mailOptions = {
         from: `"ProjectBuddy" <${emailUser}>`,
-        to,
-        subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-        html: getOtpEmailHtml({ name, otp }),
+        to: to.trim(),
+        subject: emailSubject,
+        text: textContent,
+        html: htmlContent,
+        headers: {
+          "X-Priority": "3",
+          "X-Mailer": "ProjectBuddy Auth System",
+          "Precedence": "bulk",
+        },
       };
 
       const info = await transporter.sendMail(mailOptions);
@@ -351,9 +365,10 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
         },
         body: JSON.stringify({
           from: fromEmail,
-          to: [to],
-          subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-          html: getOtpEmailHtml({ name, otp }),
+          to: [to.trim()],
+          subject: emailSubject,
+          text: textContent,
+          html: htmlContent,
         }),
         signal: controller.signal,
       });

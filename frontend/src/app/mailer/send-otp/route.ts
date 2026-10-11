@@ -119,10 +119,13 @@ const getOtpEmailHtml = ({ name, otp }: { name: string; otp: string }) => `
 </html>
 `;
 
+const getOtpEmailText = ({ name, otp }: { name: string; otp: string }) =>
+  `Hello ${name},\n\nYour ProjectBuddy verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this verification code, please ignore this email.\n\n— ProjectBuddy Developer Network`;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { to, otp, name = "Developer", secret } = body;
+    const { to, otp, name = "Developer", secret, text } = body;
 
     const expectedSecret = process.env.INTERNAL_MAILER_SECRET || "pb_mailer_secure_bridge_2026";
     if (secret && secret !== expectedSecret) {
@@ -152,11 +155,19 @@ export async function POST(req: Request) {
       },
     });
 
+    const plainText = text || getOtpEmailText({ name, otp });
+
     const info = await transporter.sendMail({
       from: `"ProjectBuddy" <${emailUser}>`,
-      to,
-      subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
+      to: to.trim(),
+      subject: `ProjectBuddy verification code: ${otp}`,
+      text: plainText,
       html: getOtpEmailHtml({ name, otp }),
+      headers: {
+        "X-Priority": "3",
+        "X-Mailer": "ProjectBuddy Auth System",
+        "Precedence": "bulk",
+      },
     });
 
     return NextResponse.json({

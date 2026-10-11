@@ -30,6 +30,7 @@ interface SidebarProps {
   openCreateModal: () => void;
   unreadMessagesCount?: number;
   unreadActivitiesCount?: number;
+  onOpenChat?: (targetHandleOrId: string) => void;
 }
 
 export function Sidebar({
@@ -38,6 +39,7 @@ export function Sidebar({
   openCreateModal,
   unreadMessagesCount,
   unreadActivitiesCount,
+  onOpenChat,
 }: SidebarProps) {
   const { user, isAuthenticated, logout, openAuthModal } = useAuth();
   const { showToast } = useNotification();
@@ -45,6 +47,8 @@ export function Sidebar({
   const [unreadMessages, setUnreadMessages] = useState(0);
   const prevUnreadMessagesRef = useRef(0);
   const prevUnreadActivitiesRef = useRef(0);
+  const isFirstFetchRef = useRef(true);
+  const seenMessagesMapRef = useRef<Record<string, string>>({});
 
   // Instantly clear notification count as soon as the user opens the tab
   useEffect(() => {
@@ -65,6 +69,8 @@ export function Sidebar({
       return;
     }
 
+    const myCleanHandle = user.handle.toLowerCase().replace(/^@/, "");
+
     const checkUpdates = async () => {
       try {
         const [acts, convs] = await Promise.all([
@@ -77,7 +83,7 @@ export function Sidebar({
         if (Array.isArray(acts)) {
           const unreadAct = acts.filter((a) => a.status === "pending").length;
           setUnreadActivities(unreadAct);
-          if (unreadAct > prevUnreadActivitiesRef.current && activeTab !== "activity") {
+          if (!isFirstFetchRef.current && unreadAct > prevUnreadActivitiesRef.current && activeTab !== "activity") {
             const latest = acts[0];
             showToast({
               type: "collab",
@@ -95,30 +101,98 @@ export function Sidebar({
           const unreadMsg = activeTab === "messages" ? 0 : totalUnread;
           setUnreadMessages(unreadMsg);
 
-          // If a new unread message arrived and user is not looking at messages
-          if (totalUnread > prevUnreadMessagesRef.current && activeTab !== "messages") {
+          // Check if any conversation received a new incoming message
+          for (const conv of convs) {
+            const convId = conv._id || conv.id;
+            const lastMsg =
+              typeof conv.lastMessage === "string"
+                ? conv.lastMessage
+                : conv.lastMessage?.text || "";
+
+            const prevMsg = seenMessagesMapRef.current[convId];
+
+            if (!isFirstFetchRef.current && lastMsg && prevMsg !== undefined && prevMsg !== lastMsg) {
+              // Extract other participant info
+              const otherDetail = conv.participantDetails?.find(
+                (p: any) => p.handle?.toLowerCase().replace(/^@/, "") !== myCleanHandle
+              );
+              const otherHandle =
+                otherDetail?.handle ||
+                conv.participants?.find(
+                  (p: string) => p.toLowerCase().replace(/^@/, "") !== myCleanHandle
+                ) ||
+                "@collaborator";
+              const senderName = otherDetail?.name || otherHandle.replace(/^@/, "") || "Collaborator";
+
+              showToast({
+                type: "chat",
+                title: senderName,
+                message: lastMsg,
+                avatar: otherDetail?.avatar,
+                initials: (senderName || "DV").slice(0, 2).toUpperCase(),
+                actionLabel: "Reply",
+                onAction: () => {
+                  if (onOpenChat) {
+                    onOpenChat(otherHandle);
+                  } else {
+                    setActiveTab("messages");
+                  }
+                },
+              });
+              break; // Pop the latest incoming message
+            }
+
+            // Record latest message in map
+            if (lastMsg) {
+              seenMessagesMapRef.current[convId] = lastMsg;
+            }
+          }
+
+          // Fallback if totalUnread increased but individual message diff didn't trigger
+          if (
+            !isFirstFetchRef.current &&
+            totalUnread > prevUnreadMessagesRef.current &&
+            activeTab !== "messages"
+          ) {
             const unreadConv = convs.find((c) => (c.unreadCount || 0) > 0) || convs[0];
             const otherDetail = unreadConv?.participantDetails?.find(
-              (p: any) => p.handle?.toLowerCase().replace(/^@/, "") !== user.handle?.toLowerCase().replace(/^@/, "")
+              (p: any) => p.handle?.toLowerCase().replace(/^@/, "") !== myCleanHandle
             );
+            const otherHandle =
+              otherDetail?.handle ||
+              unreadConv?.participants?.find(
+                (p: string) => p.toLowerCase().replace(/^@/, "") !== myCleanHandle
+              ) ||
+              "@collaborator";
             const senderName =
               otherDetail?.name ||
-              unreadConv?.participants?.find(
-                (p: string) => p.toLowerCase().replace(/^@/, "") !== user.handle?.toLowerCase().replace(/^@/, "")
-              ) ||
+              otherHandle.replace(/^@/, "") ||
               "Collaborator";
+
+            const lastMsgText =
+              typeof unreadConv?.lastMessage === "string"
+                ? unreadConv.lastMessage
+                : unreadConv?.lastMessage?.text || "Sent you a direct message";
 
             showToast({
               type: "chat",
-              title: `New message from ${senderName}`,
-              message: unreadConv?.lastMessage || "Sent you a direct message",
+              title: senderName,
+              message: lastMsgText,
               avatar: otherDetail?.avatar,
               initials: (senderName || "DV").slice(0, 2).toUpperCase(),
               actionLabel: "Reply",
-              onAction: () => setActiveTab("messages"),
+              onAction: () => {
+                if (onOpenChat) {
+                  onOpenChat(otherHandle);
+                } else {
+                  setActiveTab("messages");
+                }
+              },
             });
           }
+
           prevUnreadMessagesRef.current = activeTab === "messages" ? 0 : totalUnread;
+          isFirstFetchRef.current = false;
         }
       } catch (err) {
         // Silently retain
@@ -126,12 +200,12 @@ export function Sidebar({
     };
 
     checkUpdates();
-    const interval = setInterval(checkUpdates, 3000);
+    const interval = setInterval(checkUpdates, 2500);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [user?.handle, activeTab, showToast, setActiveTab]);
+  }, [user?.handle, activeTab, showToast, setActiveTab, onOpenChat]);
 
   const activityBadge =
     activeTab === "activity"

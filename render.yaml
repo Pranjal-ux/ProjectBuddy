@@ -17,8 +17,13 @@ services:
       - key: CLIENT_URL
         sync: false
       - key: USE_DUMMY_SMTP
-        value: "true"
+        value: "false"
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+

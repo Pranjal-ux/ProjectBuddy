@@ -195,6 +195,7 @@ function HomeContent() {
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         openCreateModal={() => setCreateModalOpen(true)}
+        onOpenChat={handleOpenChat}
       />
 
       {/* 2. Main Center Content Stream */}
