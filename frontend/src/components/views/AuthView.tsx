@@ -105,7 +105,19 @@ export function AuthView() {
           return;
         }
 
-        await login({ loginIdentifier: email.trim(), password });
+        const res = await login({ loginIdentifier: email.trim(), password });
+        if (res?.requireOtp) {
+          setOtpPendingEmail(res.email || email.trim());
+          setOtpStep(true);
+          setOtpCode("");
+          setResendCooldown(60);
+          if (res.otpPreview) {
+            setOtpPreview(res.otpPreview);
+          }
+          setSuccessMsg(res.message || "Please enter the OTP verification code sent to your email.");
+          return;
+        }
+
         setSuccessMsg("Signed in successfully! Loading your feed...");
       }
     } catch (err: unknown) {

@@ -8,7 +8,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<AuthResponse>;
   register: (payload: RegisterPayload) => Promise<AuthResponse>;
   verifyOtp: (payload: { email: string; otp: string }) => Promise<AuthResponse>;
   resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string; otpPreview?: string }>;
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.following]);
 
-  const login = async (payload: LoginPayload) => {
+  const login = async (payload: LoginPayload): Promise<AuthResponse> => {
     const res = await api.login(payload);
     if (res.user && res.token) {
       setUser(res.user);
@@ -146,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("projectbuddy_user", JSON.stringify(res.user));
       setAuthModalOpen(false);
     }
+    return res;
   };
 
   const register = async (payload: RegisterPayload): Promise<AuthResponse> => {

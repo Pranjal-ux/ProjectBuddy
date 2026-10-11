@@ -470,9 +470,31 @@ export const loginUser = async (req, res) => {
       });
 
       if (!user) {
+        const pending = await OtpVerification.findOne({
+          email: cleanIdentifier,
+          type: "register",
+        });
+        if (pending) {
+          return res.status(400).json({
+            success: false,
+            requireOtp: true,
+            email: cleanIdentifier,
+            message: "Account not verified yet. Please enter the 6-digit OTP code sent to your email to complete registration.",
+          });
+        }
+
         return res.status(401).json({
           success: false,
           message: "Invalid credentials: User not found.",
+        });
+      }
+
+      if (user.isEmailVerified === false) {
+        return res.status(403).json({
+          success: false,
+          requireOtp: true,
+          email: user.email,
+          message: "Email address is not verified. Please verify your email before signing in.",
         });
       }
 
