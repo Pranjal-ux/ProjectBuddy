@@ -145,10 +145,7 @@ export const registerUser = async (req, res) => {
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        message: emailResult.sent
-          ? `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox and enter it below.`
-          : `A verification code was generated for ${normalizedEmail}. ${emailResult.error ? `(Delivery notice: ${emailResult.error})` : ""}`,
-        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox.`,
       });
     } else {
       // In-memory fallback
@@ -198,10 +195,7 @@ export const registerUser = async (req, res) => {
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        message: emailResult.sent
-          ? `A 6-digit verification code has been sent to ${normalizedEmail}.`
-          : `A verification code was generated for ${normalizedEmail}.`,
-        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
+        message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
       });
     }
   } catch (error) {
@@ -403,10 +397,7 @@ export const resendRegistrationOtp = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: emailResult.sent
-          ? `New verification code sent to ${normalizedEmail}`
-          : `New verification code generated for ${normalizedEmail}.`,
-        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
+        message: `New verification code sent to ${normalizedEmail}.`,
       });
     } else {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -416,7 +407,7 @@ export const resendRegistrationOtp = async (req, res) => {
         inMemoryRecord.expiresAt = Date.now() + 10 * 60 * 1000;
       }
 
-      const emailResult = await sendOtpEmail({
+      await sendOtpEmail({
         to: normalizedEmail,
         otp,
         name: inMemoryRecord?.pendingUserData?.name || "Developer",
@@ -424,10 +415,7 @@ export const resendRegistrationOtp = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: emailResult.sent
-          ? `New verification code sent to ${normalizedEmail}`
-          : `New verification code generated for ${normalizedEmail}.`,
-        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
+        message: `New verification code sent to ${normalizedEmail}.`,
       });
     }
   } catch (error) {

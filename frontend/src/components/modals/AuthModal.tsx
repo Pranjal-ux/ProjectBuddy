@@ -292,24 +292,6 @@ export function AuthModal() {
             </span>
           </div>
 
-          {otpPreview && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <KeyRound className="size-4 shrink-0 text-amber-400" />
-                <span>
-                  Test Mode OTP: <strong className="font-mono text-white text-sm">{otpPreview}</strong>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOtpCode(otpPreview)}
-                className="underline text-amber-200 hover:text-white font-medium cursor-pointer text-xs"
-              >
-                Auto-fill
-              </button>
-            </div>
-          )}
-
           {error && (
             <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2.5">
               <AlertCircle className="size-4 shrink-0" />

@@ -264,24 +264,6 @@ export function AuthView() {
                 </span>
               </div>
 
-              {otpPreview && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="size-4 shrink-0 text-amber-400" />
-                    <span>
-                      Test Mode OTP: <strong className="font-mono text-white text-sm">{otpPreview}</strong>
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setOtpCode(otpPreview)}
-                    className="underline text-amber-200 hover:text-white font-medium cursor-pointer text-xs"
-                  >
-                    Auto-fill
-                  </button>
-                </div>
-              )}
-
               <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-mono text-[var(--text-secondary)] text-center">
