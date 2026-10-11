@@ -11,6 +11,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 import { inMemoryUsers } from "../data/inMemoryStore.js";
 
+const inMemoryPendingRegistrations = new Map();
 
 const isDbReady = () => mongoose.connection.readyState === 1;
 
@@ -102,47 +103,52 @@ export const registerUser = async (req, res) => {
         });
       }
 
+      // Generate 6-digit OTP code
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
       // Hash password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const newUser = await User.create({
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store pending registration with OTP in database
+      await OtpVerification.findOneAndUpdate(
+        { email: normalizedEmail, type: "register" },
+        {
+          email: normalizedEmail,
+          otp,
+          type: "register",
+          pendingUserData: {
+            name: name.trim(),
+            handle: formattedHandle,
+            email: normalizedEmail,
+            password: hashedPassword,
+            role: role?.trim() || "Fullstack Developer",
+            bio: bio?.trim() || "Building cool software on ProjectBuddy.",
+            initials,
+            skills: ["React", "TypeScript", "Node.js"],
+          },
+          expiresAt,
+        },
+        { upsert: true, new: true }
+      );
+
+      // Send OTP via email (with fallback if SMTP not configured)
+      const emailResult = await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
         name: name.trim(),
-        handle: formattedHandle,
-        email: normalizedEmail,
-        password: hashedPassword,
-        role: role?.trim() || "Fullstack Developer",
-        bio: bio?.trim() || "Building cool software on ProjectBuddy.",
-        initials,
-        skills: ["React", "TypeScript", "Node.js"],
-        isEmailVerified: true,
-        authProvider: "local",
       });
 
-      const token = generateToken(newUser._id, newUser.handle, newUser.email);
-
-      return res.status(201).json({
+      return res.status(200).json({
         success: true,
-        message: "Account created successfully!",
-        token,
-        user: {
-          id: newUser._id,
-          _id: newUser._id,
-          name: newUser.name,
-          handle: newUser.handle,
-          email: newUser.email,
-          role: newUser.role,
-          bio: newUser.bio,
-          initials: newUser.initials,
-          skills: newUser.skills,
-          avatar: newUser.avatar,
-          banner: newUser.banner,
-          followersCount: 0,
-          followingCount: 0,
-          following: [],
-          followers: [],
-          stats: newUser.stats || { projectsJoined: 0, snippetsShared: 0, upvotes: 0 },
-        },
+        requireOtp: true,
+        email: normalizedEmail,
+        message: emailResult.sent
+          ? `A 6-digit verification code has been sent to ${normalizedEmail}. Please check your inbox and enter it below.`
+          : `A verification code was generated for ${normalizedEmail}. ${emailResult.error ? `(Delivery notice: ${emailResult.error})` : ""}`,
+        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
       });
     } else {
       // In-memory fallback
@@ -156,17 +162,18 @@ export const registerUser = async (req, res) => {
         });
       }
 
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
       const mockId = `usr-${Date.now()}`;
-      const newUser = {
+      const pendingUserData = {
         _id: mockId,
         id: mockId,
         name: name.trim(),
         handle: formattedHandle,
         email: normalizedEmail,
-        passwordHash: hashedPassword,
+        password: hashedPassword,
         role: role?.trim() || "Fullstack Developer",
         bio: bio?.trim() || "Building cool software on ProjectBuddy.",
         initials,
@@ -174,15 +181,27 @@ export const registerUser = async (req, res) => {
         isEmailVerified: true,
         createdAt: new Date().toISOString(),
       };
-      inMemoryUsers.push(newUser);
 
-      const token = generateToken(mockId, formattedHandle, normalizedEmail);
+      inMemoryPendingRegistrations.set(normalizedEmail, {
+        otp,
+        pendingUserData,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      });
 
-      return res.status(201).json({
+      const emailResult = await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
+        name: name.trim(),
+      });
+
+      return res.status(200).json({
         success: true,
-        message: "Account created successfully!",
-        token,
-        user: newUser,
+        requireOtp: true,
+        email: normalizedEmail,
+        message: emailResult.sent
+          ? `A 6-digit verification code has been sent to ${normalizedEmail}.`
+          : `A verification code was generated for ${normalizedEmail}.`,
+        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
       });
     }
   } catch (error) {
@@ -288,20 +307,46 @@ export const verifyRegistrationOtp = async (req, res) => {
       });
     } else {
       // In-memory fallback
-      const token = generateToken(`usr-${Date.now()}`, "@developer", normalizedEmail);
+      const inMemoryRecord = inMemoryPendingRegistrations.get(normalizedEmail);
+      if (!inMemoryRecord) {
+        return res.status(400).json({
+          success: false,
+          message: "No pending verification found for this email. Please sign up again.",
+        });
+      }
+
+      if (Date.now() > inMemoryRecord.expiresAt) {
+        return res.status(400).json({
+          success: false,
+          message: "Verification code has expired. Please click Resend Code.",
+        });
+      }
+
+      if (inMemoryRecord.otp !== cleanOtp) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid verification code. Please check your email and try again.",
+        });
+      }
+
+      const verifiedUser = {
+        ...inMemoryRecord.pendingUserData,
+        isEmailVerified: true,
+      };
+      inMemoryUsers.push(verifiedUser);
+      inMemoryPendingRegistrations.delete(normalizedEmail);
+
+      const token = generateToken(
+        verifiedUser._id || verifiedUser.id,
+        verifiedUser.handle,
+        normalizedEmail
+      );
+
       return res.status(201).json({
         success: true,
-        message: "Email verified successfully (In-Memory Fallback)!",
+        message: "Email verified successfully! Welcome to ProjectBuddy.",
         token,
-        user: {
-          id: `usr-${Date.now()}`,
-          _id: `usr-${Date.now()}`,
-          name: "Developer",
-          handle: "@developer",
-          email: normalizedEmail,
-          role: "Fullstack Developer",
-          isEmailVerified: true,
-        },
+        user: verifiedUser,
       });
     }
   } catch (error) {
@@ -350,7 +395,7 @@ export const resendRegistrationOtp = async (req, res) => {
       record.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await record.save();
 
-      await sendOtpEmail({
+      const emailResult = await sendOtpEmail({
         to: normalizedEmail,
         otp,
         name: record.pendingUserData?.name || "Developer",
@@ -358,13 +403,31 @@ export const resendRegistrationOtp = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: `New verification code sent to ${normalizedEmail}`,
+        message: emailResult.sent
+          ? `New verification code sent to ${normalizedEmail}`
+          : `New verification code generated for ${normalizedEmail}.`,
+        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
       });
     } else {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const inMemoryRecord = inMemoryPendingRegistrations.get(normalizedEmail);
+      if (inMemoryRecord) {
+        inMemoryRecord.otp = otp;
+        inMemoryRecord.expiresAt = Date.now() + 10 * 60 * 1000;
+      }
+
+      const emailResult = await sendOtpEmail({
+        to: normalizedEmail,
+        otp,
+        name: inMemoryRecord?.pendingUserData?.name || "Developer",
+      });
+
       return res.status(200).json({
         success: true,
-        message: `New verification code sent to ${normalizedEmail}`,
+        message: emailResult.sent
+          ? `New verification code sent to ${normalizedEmail}`
+          : `New verification code generated for ${normalizedEmail}.`,
+        otpPreview: emailResult.sent ? undefined : (emailResult.otpPreview || otp),
       });
     }
   } catch (error) {

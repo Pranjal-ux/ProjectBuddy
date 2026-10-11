@@ -11,7 +11,7 @@ interface AuthContextType {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<AuthResponse>;
   verifyOtp: (payload: { email: string; otp: string }) => Promise<AuthResponse>;
-  resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string }>;
+  resendOtp: (payload: { email: string }) => Promise<{ success: boolean; message: string; otpPreview?: string }>;
   googleLogin: (payload: {
     credential?: string;
     accessToken?: string;
