@@ -196,7 +196,47 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
 
   let lastError = null;
 
-  // 2. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API (never blocked by cloud port filters)
+  // 2. REAL GMAIL / SMTP: Prioritize Gmail SMTP when credentials are provided
+  if (emailUser && emailPass) {
+    try {
+      const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+      const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
+
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: emailUser, pass: emailPass },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      const mailOptions = {
+        from: `"ProjectBuddy" <${emailUser}>`,
+        to,
+        subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
+        html: getOtpEmailHtml({ name, otp }),
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✅ [Gmail SMTP] Real OTP email delivered to ${to}. MessageId: ${info.messageId}`);
+
+      return {
+        sent: true,
+        mode: "smtp",
+        messageId: info.messageId,
+      };
+    } catch (smtpErr) {
+      console.warn("⚠️ [Gmail SMTP] Could not deliver email:", smtpErr.message);
+      lastError = smtpErr.message;
+    }
+  }
+
+  // 3. RESEND API: If RESEND_API_KEY is configured, send via HTTPS REST API
   if (resendApiKey) {
     try {
       const fromEmail = process.env.EMAIL_FROM || "ProjectBuddy <onboarding@resend.dev>";
@@ -244,51 +284,6 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
     } catch (resendErr) {
       lastError = resendErr.message;
       console.warn("⚠️ [Resend API] Request error:", resendErr.message);
-    }
-  }
-
-  // 3. NODEMAILER SMTP (Gmail or custom SMTP) with strict 3.5s timeout to prevent hanging the request
-  if (emailUser && emailPass) {
-    try {
-      const smtpHost = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
-      const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
-
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: emailUser, pass: emailPass },
-        connectionTimeout: 3000,
-        greetingTimeout: 3000,
-        socketTimeout: 3500,
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-
-      const mailOptions = {
-        from: `"ProjectBuddy" <${process.env.EMAIL_FROM || emailUser || "no-reply@projectbuddy.dev"}>`,
-        to,
-        subject: `🔐 Verify your ProjectBuddy Account - OTP: ${otp}`,
-        html: getOtpEmailHtml({ name, otp }),
-      };
-
-      const sendPromise = transporter.sendMail(mailOptions);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("SMTP connection timed out after 3.5s")), 3500)
-      );
-
-      const info = await Promise.race([sendPromise, timeoutPromise]);
-      console.log(`✅ [SMTP] Real OTP email sent to ${to}. MessageId: ${info.messageId}`);
-
-      return {
-        sent: true,
-        mode: "smtp",
-        messageId: info.messageId,
-      };
-    } catch (smtpErr) {
-      console.warn("⚠️ [SMTP] Could not deliver email:", smtpErr.message);
-      lastError = smtpErr.message;
     }
   }
 
