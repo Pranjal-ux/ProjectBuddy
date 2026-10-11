@@ -196,7 +196,58 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
 
   let lastError = null;
 
-  // 2. BREVO (Sendinblue) HTTPS REST API (Uses port 443 - Works seamlessly on Render free tier without domain)
+  // 2. VERCEL MAILER BRIDGE: Uses HTTPS (Port 443) from Render -> Vercel Next.js API Route -> Gmail SMTP
+  // This bypasses Render Free Tier's blocked SMTP ports (465/587) while sending directly from your Gmail account!
+  const isRender = !!process.env.RENDER || process.env.NODE_ENV === "production" || process.env.USE_VERCEL_MAILER === "true";
+  const vercelMailerUrl = process.env.VERCEL_MAILER_URL?.trim() || "https://projectbuddyapp.vercel.app/api/send-otp";
+
+  const tryVercelBridge = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(vercelMailerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to,
+          otp,
+          name,
+          secret: process.env.INTERNAL_MAILER_SECRET || "pb_mailer_secure_bridge_2026",
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const resData = await res.json().catch(() => ({}));
+
+      if (res.ok && resData.success) {
+        console.log(`✅ [Vercel Mailer Bridge] Real OTP email delivered to ${to} via Gmail SMTP on Vercel. MessageId: ${resData.messageId}`);
+        return {
+          sent: true,
+          mode: "vercel_mailer",
+          messageId: resData.messageId,
+        };
+      } else {
+        lastError = resData.error || resData.message || "Vercel mailer bridge delivery failed";
+        console.warn(`⚠️ [Vercel Mailer Bridge] Returned:`, lastError);
+      }
+    } catch (bridgeErr) {
+      lastError = bridgeErr.message;
+      console.warn(`⚠️ [Vercel Mailer Bridge] Error:`, bridgeErr.message);
+    }
+    return null;
+  };
+
+  // If running in cloud (Render) where SMTP ports are blocked, prioritize the Vercel Mailer Bridge
+  if (isRender) {
+    const bridgeResult = await tryVercelBridge();
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // 3. BREVO (Sendinblue) HTTPS REST API (Port 443 fallback)
   const brevoApiKey = process.env.BREVO_API_KEY?.trim();
   if (brevoApiKey) {
     try {
@@ -277,8 +328,11 @@ export const sendOtpEmail = async ({ to, otp, name = "Developer" }) => {
         messageId: info.messageId,
       };
     } catch (smtpErr) {
-      console.warn("⚠️ [Gmail SMTP] Could not deliver email:", smtpErr.message);
+      console.warn("⚠️ [Gmail SMTP] Could not deliver email directly:", smtpErr.message);
       lastError = smtpErr.message;
+      // If direct SMTP failed (e.g. ports blocked by cloud host firewall), try Vercel Mailer Bridge as fallback
+      const fallbackBridge = await tryVercelBridge();
+      if (fallbackBridge) return fallbackBridge;
     }
   }
 
