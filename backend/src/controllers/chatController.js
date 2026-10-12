@@ -8,6 +8,70 @@ const isDbReady = () => mongoose.connection.readyState === 1;
 let inMemoryConversations = [];
 let inMemoryMessages = {};
 
+// Active user tracker: map of lowercase clean handle -> last active timestamp (ms)
+const activeUsers = new Map();
+const ONLINE_THRESHOLD_MS = 15000; // 15 seconds window (clients poll every 2.5s-3s)
+
+export const trackUserActivity = (handle) => {
+  if (!handle) return;
+  const clean = handle.toString().trim().toLowerCase().replace(/^@/, "");
+  if (clean) {
+    activeUsers.set(clean, Date.now());
+  }
+};
+
+export const setUserOffline = (handle) => {
+  if (!handle) return;
+  const clean = handle.toString().trim().toLowerCase().replace(/^@/, "");
+  if (clean) {
+    activeUsers.delete(clean);
+  }
+};
+
+export const isUserOnline = (handle) => {
+  if (!handle) return false;
+  const clean = handle.toString().trim().toLowerCase().replace(/^@/, "");
+  const lastActive = activeUsers.get(clean);
+  if (!lastActive) return false;
+  return Date.now() - lastActive < ONLINE_THRESHOLD_MS;
+};
+
+export const getOnlineUsers = (req, res) => {
+  const now = Date.now();
+  for (const [handle, timestamp] of activeUsers.entries()) {
+    if (now - timestamp >= ONLINE_THRESHOLD_MS) {
+      activeUsers.delete(handle);
+    }
+  }
+  return res.status(200).json({
+    success: true,
+    onlineUsers: Array.from(activeUsers.keys()),
+  });
+};
+
+export const sendHeartbeat = (req, res) => {
+  const handle = req.body?.handle || req.query?.handle;
+  if (handle) {
+    trackUserActivity(handle);
+  }
+  return res.status(200).json({
+    success: true,
+    message: "Heartbeat acknowledged",
+    online: isUserOnline(handle),
+  });
+};
+
+export const setStatusOffline = (req, res) => {
+  const handle = req.body?.handle || req.query?.handle;
+  if (handle) {
+    setUserOffline(handle);
+  }
+  return res.status(200).json({
+    success: true,
+    message: "Status set to offline",
+  });
+};
+
 export { inMemoryConversations, inMemoryMessages };
 
 const makeHandleRegex = (handle) => {
@@ -39,6 +103,10 @@ const getUserProfile = async (handle) => {
 export const getConversations = async (req, res) => {
   try {
     const handle = (req.query.handle || "").trim();
+    if (handle) {
+      trackUserActivity(handle);
+    }
+    const cleanUserHandle = handle.toLowerCase().replace(/^@/, "");
     const handleRegex = makeHandleRegex(handle);
 
     if (isDbReady()) {
@@ -47,7 +115,7 @@ export const getConversations = async (req, res) => {
         : {};
       const convs = await Conversation.find(filter).sort({ lastMessageAt: -1 }).lean();
 
-      // Enrich conversations with real-time unreadCount, live user avatars and last message
+      // Enrich conversations with real-time unreadCount, live user avatars, last message, and online status
       const enriched = await Promise.all(
         convs.map(async (conv) => {
           const convId = conv._id?.toString() || conv.id;
@@ -66,7 +134,7 @@ export const getConversations = async (req, res) => {
             if (latest) lastMsg = latest.text;
           }
 
-          // Live avatar and profile enrichment for participants
+          // Live avatar and profile enrichment for participants with online status
           const updatedParticipantDetails = await Promise.all(
             (conv.participants || []).map(async (pHandle) => {
               const cleanP = pHandle.replace(/^@/, "");
@@ -75,6 +143,7 @@ export const getConversations = async (req, res) => {
               );
               const userDoc = await getUserProfile(pHandle);
               const fallbackAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanP}`;
+              const online = isUserOnline(pHandle);
 
               return {
                 name: userDoc?.name || existing?.name || cleanP,
@@ -82,9 +151,15 @@ export const getConversations = async (req, res) => {
                 avatar: userDoc?.avatar || existing?.avatar || fallbackAvatar,
                 role: userDoc?.role || existing?.role || "Developer",
                 initials: (userDoc?.name || existing?.name || cleanP).slice(0, 2).toUpperCase(),
+                online,
               };
             })
           );
+
+          const otherHandle = (conv.participants || []).find(
+            (p) => p.toLowerCase().replace(/^@/, "") !== cleanUserHandle
+          ) || conv.participants?.[0];
+          const isOtherOnline = otherHandle ? isUserOnline(otherHandle) : false;
 
           return {
             ...conv,
@@ -92,6 +167,7 @@ export const getConversations = async (req, res) => {
             participantDetails: updatedParticipantDetails,
             lastMessage: lastMsg || "Started a conversation",
             unreadCount: unread,
+            online: isOtherOnline,
           };
         })
       );
@@ -121,10 +197,22 @@ export const getConversations = async (req, res) => {
           !m.seen
       ).length;
 
+      const otherHandle = (c.participants || []).find(
+        (p) => p.toLowerCase().replace(/^@/, "") !== cleanUserHandle
+      ) || c.participants?.[0];
+      const isOtherOnline = otherHandle ? isUserOnline(otherHandle) : false;
+
+      const updatedParticipantDetails = (c.participantDetails || []).map((p) => ({
+        ...p,
+        online: isUserOnline(p.handle),
+      }));
+
       return {
         ...c,
         id: convId,
+        participantDetails: updatedParticipantDetails,
         unreadCount: unread,
+        online: isOtherOnline,
       };
     });
 
@@ -151,6 +239,9 @@ export const getMessages = async (req, res) => {
   try {
     const { id } = req.params;
     const viewerHandle = (req.query.viewerHandle || "").trim();
+    if (viewerHandle) {
+      trackUserActivity(viewerHandle);
+    }
     const viewerRegex = makeHandleRegex(viewerHandle);
 
     if (isDbReady()) {
@@ -238,6 +329,10 @@ export const sendMessage = async (req, res) => {
   try {
     const { id } = req.params;
     let { senderHandle, senderName, senderAvatar, text } = req.body;
+
+    if (senderHandle) {
+      trackUserActivity(senderHandle);
+    }
 
     if (!text || !text.trim()) {
       return res.status(400).json({
@@ -340,6 +435,9 @@ export const markMessagesAsSeen = async (req, res) => {
   try {
     const { id } = req.params;
     const viewerHandle = (req.body.viewerHandle || req.query.viewerHandle || "").trim();
+    if (viewerHandle) {
+      trackUserActivity(viewerHandle);
+    }
     const viewerRegex = makeHandleRegex(viewerHandle);
 
     if (isDbReady()) {

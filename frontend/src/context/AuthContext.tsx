@@ -204,6 +204,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    if (user?.handle) {
+      api.setOfflineStatus(user.handle).catch(() => {});
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem("projectbuddy_token");

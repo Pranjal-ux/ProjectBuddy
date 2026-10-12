@@ -761,4 +761,46 @@ export const api = {
     }
     return json;
   },
+
+  // Chat: Send heartbeat for online status
+  async sendHeartbeat(handle: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/heartbeat`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ handle }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // Chat: Set status to offline (e.g. on logout or unload)
+  async setOfflineStatus(handle: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/status/offline`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ handle }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // Chat: Get all currently online users
+  async getOnlineUsers(): Promise<string[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/online-users`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.onlineUsers || [];
+    } catch {
+      return [];
+    }
+  },
 };

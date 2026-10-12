@@ -195,7 +195,7 @@ export function MessagesView({
               : (conv.unreadCounts &&
                   (conv.unreadCounts[handle] || conv.unreadCounts[myCleanHandle])) ||
                 0,
-            online: true,
+            online: Boolean(details.online !== undefined ? details.online : conv.online),
             role: details.role || "Developer",
             bio: details.bio || "Active contributor on ProjectBuddy.",
             skills: details.skills || ["TypeScript", "Fullstack"],
@@ -269,7 +269,7 @@ export function MessagesView({
           lastMsg: "Connected on ProjectBuddy! Let's collaborate.",
           time: "Just now",
           unread: 0,
-          online: true,
+          online: false,
           role: "Team Collaborator",
           bio: `Software developer collaborating with ${user?.name || "you"} on ProjectBuddy.`,
           skills: ["Collaboration", "Git"],
@@ -505,7 +505,7 @@ export function MessagesView({
         lastMsg: "Started a conversation",
         time: "Just now",
         unread: 0,
-        online: true,
+        online: false,
         role: person.role || "Developer",
         bio: person.bio || "Building on ProjectBuddy.",
         skills: person.skills || ["TypeScript", "Next.js"],
@@ -680,8 +680,16 @@ export function MessagesView({
                       size="md"
                       className="border border-white/10"
                     />
-                    {contact.online && (
-                      <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface-low)]" />
+                    {contact.online ? (
+                      <span
+                        className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface-low)] shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                        title="Online"
+                      />
+                    ) : (
+                      <span
+                        className="absolute bottom-0 right-0 size-3 rounded-full bg-zinc-600 ring-2 ring-[var(--bg-surface-low)]"
+                        title="Offline"
+                      />
                     )}
                   </div>
 
@@ -779,8 +787,16 @@ export function MessagesView({
                       size="sm"
                       className="border border-white/10 group-hover/header:ring-2 group-hover/header:ring-[#1d9bf0] transition-all"
                     />
-                    {currentContact.online && (
-                      <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-1 ring-[var(--bg-surface-low)]" />
+                    {currentContact.online ? (
+                      <span
+                        className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-1 ring-[var(--bg-surface-low)] shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+                        title="Online"
+                      />
+                    ) : (
+                      <span
+                        className="absolute bottom-0 right-0 size-2.5 rounded-full bg-zinc-500 ring-1 ring-[var(--bg-surface-low)]"
+                        title="Offline"
+                      />
                     )}
                   </div>
 
@@ -797,10 +813,17 @@ export function MessagesView({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                        <Circle className="size-1.5 fill-emerald-400" />
-                        <span>{currentContact.online ? "Active now" : "Recently active"}</span>
-                      </span>
+                      {currentContact.online ? (
+                        <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                          <Circle className="size-1.5 fill-emerald-400 text-emerald-400 animate-pulse" />
+                          <span>Online</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
+                          <Circle className="size-1.5 fill-zinc-500 text-zinc-500" />
+                          <span>Offline</span>
+                        </span>
+                      )}
                       <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">·</span>
                       <span className="text-[10px] text-zinc-400 truncate hidden sm:inline">
                         {currentContact.project}
@@ -865,8 +888,16 @@ export function MessagesView({
                   size="lg"
                   className="size-18 border-2 border-white/20 shadow-xl"
                 />
-                {currentContact.online && (
-                  <span className="absolute bottom-1 right-1 size-3.5 rounded-full bg-emerald-500 ring-2 ring-black" />
+                {currentContact.online ? (
+                  <span
+                    className="absolute bottom-1 right-1 size-3.5 rounded-full bg-emerald-500 ring-2 ring-black shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                    title="Online"
+                  />
+                ) : (
+                  <span
+                    className="absolute bottom-1 right-1 size-3.5 rounded-full bg-zinc-600 ring-2 ring-black"
+                    title="Offline"
+                  />
                 )}
               </div>
 
@@ -879,9 +910,23 @@ export function MessagesView({
                     <ShieldCheck className="size-4 fill-[#1d9bf0] text-black" />
                   )}
                 </div>
-                <span className="text-xs text-[var(--text-muted)] font-mono">
-                  {currentContact.handle} · {currentContact.role}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <span className="text-xs text-[var(--text-muted)] font-mono">
+                    {currentContact.handle} · {currentContact.role}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono">·</span>
+                  {currentContact.online ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700">
+                      <span className="size-1.5 rounded-full bg-zinc-500" />
+                      Offline
+                    </span>
+                  )}
+                </div>
                 {currentContact.bio && (
                   <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm leading-relaxed">
                     {currentContact.bio}
@@ -1361,6 +1406,19 @@ export function MessagesView({
                 <span className="text-xs text-zinc-300 font-medium mt-1">
                   {currentContact.role}
                 </span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  {currentContact.online ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700">
+                      <span className="size-1.5 rounded-full bg-zinc-500" />
+                      Offline
+                    </span>
+                  )}
+                </div>
               </div>
               <Button
                 size="sm"
