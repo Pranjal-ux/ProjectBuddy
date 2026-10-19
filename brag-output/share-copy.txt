@@ -1,0 +1,5 @@
+Stop coding alone in a dark room. 
+
+Meet ProjectBuddy: the developer network to discover active open-source projects, team up with motivated co-builders, and ship real-world software together in real time. 🚀
+
+https://projectbuddyapp.vercel.app
