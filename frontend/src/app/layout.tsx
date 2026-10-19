@@ -269,8 +269,18 @@ export default function RootLayout({
     >
       <head>
         <link
-          rel="stylesheet"
-          href="https://fonts.cdnfonts.com/css/sf-pro-display"
+          rel="preload"
+          href="/fonts/sf-pro-display_regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/sf-pro-display_semibold.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
         <script
           type="application/ld+json"
