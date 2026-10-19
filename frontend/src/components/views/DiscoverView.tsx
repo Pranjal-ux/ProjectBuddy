@@ -591,7 +591,7 @@ export function DiscoverView({
   };
 
   return (
-    <div className="flex flex-col gap-5 sm:gap-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-5 sm:gap-6 p-4 sm:p-6 lg:p-8 2xl:p-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full">
       {/* ── 1. Hero Header & Quick Action ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
         <div>
@@ -906,7 +906,7 @@ export function DiscoverView({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 2xl:gap-6">
             {filteredProjects.map((proj) => {
               const { score: matchScore, overlapping } = computeSynergy([
                 ...proj.tags,

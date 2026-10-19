@@ -92,7 +92,7 @@ export function RightSidebar({
   ];
 
   return (
-    <aside className="hidden xl:flex shrink-0 h-screen sticky top-0 flex-col p-5 gap-6 border-l border-[var(--border-subtle)] bg-[var(--bg-surface-low)] overflow-y-auto w-80">
+    <aside className="hidden xl:flex shrink-0 h-screen sticky top-0 flex-col p-5 2xl:p-6 gap-6 border-l border-[var(--border-subtle)] bg-[var(--bg-surface-low)] overflow-y-auto w-80 2xl:w-96">
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3.5 top-2.5 size-4 text-[var(--text-muted)]" />

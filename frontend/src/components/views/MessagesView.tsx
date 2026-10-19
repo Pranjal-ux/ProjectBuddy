@@ -1093,11 +1093,15 @@ export function MessagesView({
                     >
                       {msg.text}
 
-                      {/* Code Snippet Card (if attached) */}
-                      {msg.codeSnippet && (
+                      {/* Code Snippet Card (if attached and non-empty) */}
+                      {Boolean(
+                        msg.codeSnippet &&
+                          msg.codeSnippet.code &&
+                          msg.codeSnippet.code.trim().length > 0
+                      ) && (
                         <div className="mt-2.5 rounded-xl bg-black/70 border border-white/10 overflow-hidden text-left font-mono max-w-full w-full">
                           <div className="px-3 py-1.5 bg-white/5 border-b border-white/10 flex items-center justify-between text-[11px] text-zinc-400">
-                            <span className="truncate">{msg.codeSnippet.language || "code"}</span>
+                            <span className="truncate">{msg.codeSnippet?.language || "code"}</span>
                             <button
                               onClick={() =>
                                 handleCopyCode(msg.codeSnippet!.code, `snip-${idx}`)
@@ -1118,7 +1122,7 @@ export function MessagesView({
                             </button>
                           </div>
                           <pre className="p-3 text-[11px] leading-relaxed overflow-x-auto max-w-full text-emerald-300">
-                            <code>{msg.codeSnippet.code}</code>
+                            <code>{msg.codeSnippet?.code}</code>
                           </pre>
                         </div>
                       )}

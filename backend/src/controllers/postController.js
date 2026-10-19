@@ -142,6 +142,18 @@ export const createPost = async (req, res) => {
     // Feature: Auto-like our own post that we post!
     const initialLikedBy = normalizedAuthor ? [normalizedAuthor] : [];
 
+    const sanitizedCodeSnippet =
+      codeSnippet &&
+      codeSnippet.code &&
+      typeof codeSnippet.code === "string" &&
+      codeSnippet.code.trim().length > 0
+        ? {
+            filename: codeSnippet.filename || "main.ts",
+            language: codeSnippet.language || "typescript",
+            code: codeSnippet.code.trim(),
+          }
+        : undefined;
+
     const newPostData = {
       customId: postId,
       author: {
@@ -158,7 +170,7 @@ export const createPost = async (req, res) => {
       tags,
       team,
       telemetry,
-      codeSnippet,
+      codeSnippet: sanitizedCodeSnippet,
       stats: {
         likes: initialLikedBy.length,
         comments: 0,

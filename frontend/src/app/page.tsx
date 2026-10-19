@@ -189,24 +189,25 @@ function HomeContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors relative">
-      {/* 1. Left Sticky Navigation Sidebar */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        openCreateModal={() => setCreateModalOpen(true)}
-        onOpenChat={handleOpenChat}
-      />
+    <div className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors flex justify-center w-full">
+      <div className="flex w-full min-h-screen relative max-w-[1720px] 2xl:max-w-[1920px] justify-center">
+        {/* 1. Left Sticky Navigation Sidebar */}
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          openCreateModal={() => setCreateModalOpen(true)}
+          onOpenChat={handleOpenChat}
+        />
 
-      {/* 2. Main Center Content Stream */}
-      <main
-        className={cn(
-          "flex-1 min-w-0 border-r border-[var(--border-subtle)] flex flex-col bg-[var(--bg-canvas)]",
-          activeTab === "messages"
-            ? "h-screen max-h-screen overflow-hidden pb-14 sm:pb-0"
-            : "min-h-screen pb-16 sm:pb-0"
-        )}
-      >
+        {/* 2. Main Center Content Stream */}
+        <main
+          className={cn(
+            "flex-1 min-w-0 border-r border-[var(--border-subtle)] flex flex-col bg-[var(--bg-canvas)]",
+            activeTab === "messages"
+              ? "h-screen max-h-screen overflow-hidden pb-14 sm:pb-0"
+              : "min-h-screen pb-16 sm:pb-0"
+          )}
+        >
         {/* Mobile Header for views other than Home & Messages */}
         {activeTab !== "home" && activeTab !== "messages" && (
           <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/90 backdrop-blur-md">
@@ -245,7 +246,7 @@ function HomeContent() {
         )}
 
         {activeTab === "home" && (
-          <>
+          <div className="w-full max-w-3xl 2xl:max-w-4xl mx-auto flex flex-col">
             <FeedHeader
               feedFilter={feedFilter}
               setFeedFilter={setFeedFilter}
@@ -316,7 +317,7 @@ function HomeContent() {
                 ))
               )}
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === "discover" && (
@@ -354,16 +355,18 @@ function HomeContent() {
         )}
 
         {activeTab === "bookmarks" && (
-          <BookmarksView
-            posts={posts}
-            onRequestJoin={handleRequestJoin}
-            onPostUpdate={handlePostUpdate}
-            onAuthorClick={handleOpenUserProfile}
-          />
+          <div className="w-full max-w-3xl 2xl:max-w-4xl mx-auto">
+            <BookmarksView
+              posts={posts}
+              onRequestJoin={handleRequestJoin}
+              onPostUpdate={handlePostUpdate}
+              onAuthorClick={handleOpenUserProfile}
+            />
+          </div>
         )}
 
         {activeTab === "settings" && (
-          <div className="p-6 max-w-xl flex flex-col gap-6">
+          <div className="p-6 max-w-xl 2xl:max-w-2xl mx-auto w-full flex flex-col gap-6">
             <h2 className="text-xl font-bold text-white">Platform Settings</h2>
             <div className="p-5 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-4">
               <div className="flex items-center justify-between">
@@ -501,6 +504,7 @@ function HomeContent() {
           </div>
         </div>
       </Dialog>
+      </div>
     </div>
   );
 }

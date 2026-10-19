@@ -186,25 +186,110 @@ export function AuthView() {
     }
   };
 
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      q: "What is ProjectBuddy (projectbuddyapp)?",
+      a: "ProjectBuddy is the leading developer collaboration platform where software engineers, designers, and creators discover trending open-source projects, recruit co-founders, showcase code snippets, and collaborate in real-time.",
+    },
+    {
+      q: "How can I find developers and teammates for my project?",
+      a: "Publish your project with stack requirements, open roles (e.g. Frontend, Backend, AI/ML), and project description. Interested developers can browse your initiative and request to join with a single click.",
+    },
+    {
+      q: "Is ProjectBuddy free for developers?",
+      a: "Yes, ProjectBuddy is 100% free to explore projects, message teammates, showcase code, and build software together.",
+    },
+    {
+      q: "How does tech stack synergy matching work?",
+      a: "ProjectBuddy matches your skills (e.g. Next.js, TypeScript, Python, Rust) against open project requirements to calculate high-fidelity synergy match scores.",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[var(--bg-canvas)] text-white flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden select-none">
+    <div className="min-h-screen bg-[var(--bg-canvas)] text-white flex flex-col justify-center items-center p-4 sm:p-6 lg:p-10 relative overflow-hidden select-none w-full">
       {/* Background radial gradient glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-blue-500/10 blur-[130px] pointer-events-none rounded-full" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-emerald-500/10 blur-[140px] pointer-events-none rounded-full" />
+      <div className="absolute top-1/3 left-1/6 w-[350px] h-[250px] bg-purple-500/10 blur-[150px] pointer-events-none rounded-full" />
 
-      <div className="w-full max-w-md flex flex-col gap-6 relative z-10 my-auto">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center gap-2.5">
-          <ProjectBuddyLogo variant="full" size="lg" />
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-sm leading-relaxed mt-1">
-            {otpStep
-              ? `Enter the 6-digit code sent to ${otpPendingEmail}`
-              : "The developer network to build teams, share indie projects, and collaborate in real time."}
-          </p>
-        </div>
+      <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto my-auto relative z-10 py-6 sm:py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          {/* Left Column: Semantic SEO Headline, Value Prop & Live Stats (Large Screens) */}
+          <div className="lg:col-span-7 flex flex-col gap-6 text-left">
+            <div className="flex items-center gap-3">
+              <ProjectBuddyLogo variant="full" size="lg" />
+              <span className="hidden sm:inline-flex text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                v0.1 Public Beta
+              </span>
+            </div>
 
-        {/* Main Auth Card */}
-        <div className="bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl p-6 sm:p-7 backdrop-blur-xl transition-all">
+            {/* Semantic SEO H1 Tag */}
+            <div className="flex flex-col gap-3">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl 2xl:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                The Developer Network for{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
+                  Open Source & Project Collaboration
+                </span>
+              </h1>
+              <p className="text-sm sm:text-base text-[var(--text-secondary)] max-w-xl leading-relaxed">
+                Connect with verified engineers, discover trending open-source initiatives, recruit teammates for your hackathons and indie products, and showcase code in high-contrast developer aesthetic.
+              </p>
+            </div>
+
+            {/* Live Developer Network Metrics */}
+            <div className="grid grid-cols-3 gap-3 max-w-lg">
+              <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-0.5">
+                <span className="text-lg sm:text-2xl font-bold font-mono text-white">5,400+</span>
+                <span className="text-[11px] text-[var(--text-muted)]">Verified Devs</span>
+              </div>
+              <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-0.5">
+                <span className="text-lg sm:text-2xl font-bold font-mono text-white">1,280+</span>
+                <span className="text-[11px] text-[var(--text-muted)]">Open Projects</span>
+              </div>
+              <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] flex flex-col gap-0.5">
+                <span className="text-lg sm:text-2xl font-bold font-mono text-emerald-400">98%</span>
+                <span className="text-[11px] text-[var(--text-muted)]">Synergy Match</span>
+              </div>
+            </div>
+
+            {/* Developer FAQ Accordion for Google Crawlers and Users */}
+            <div className="hidden md:flex flex-col gap-2 pt-2 max-w-xl">
+              <span className="text-xs font-mono text-[var(--text-muted)] uppercase tracking-wider">
+                Frequently Asked Questions
+              </span>
+              <div className="flex flex-col gap-2">
+                {faqs.map((faq, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-low)] overflow-hidden transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                      className="w-full p-3 text-left flex items-center justify-between gap-3 text-xs font-semibold text-white hover:text-emerald-400 cursor-pointer"
+                    >
+                      <span>{faq.q}</span>
+                      <span className="text-zinc-400 shrink-0 text-sm">
+                        {openFaq === idx ? "−" : "+"}
+                      </span>
+                    </button>
+                    {openFaq === idx && (
+                      <div className="px-3 pb-3 text-xs text-[var(--text-secondary)] leading-relaxed border-t border-[var(--border-subtle)]/50 pt-2">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Sleek Auth Form Box */}
+          <div className="lg:col-span-5 w-full max-w-md mx-auto flex flex-col gap-4">
+            {/* Main Auth Card */}
+            <div className="bg-[var(--bg-surface-low)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl p-6 sm:p-7 backdrop-blur-xl transition-all">
           {/* Mode Switcher Tabs (hidden in OTP step) */}
           {!otpStep && (
             <div className="flex bg-[var(--bg-surface-container)] p-1 rounded-xl border border-[var(--border-subtle)] mb-5">
@@ -524,5 +609,7 @@ export function AuthView() {
         </div>
       </div>
     </div>
+  </div>
+</div>
   );
 }

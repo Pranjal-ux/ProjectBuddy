@@ -237,7 +237,7 @@ export function ProfileView({
   const displayProjects = backendProjects || [];
 
   return (
-    <div className="flex flex-col max-w-4xl p-3 sm:p-6 gap-4 sm:gap-6">
+    <div className="flex flex-col max-w-4xl 2xl:max-w-5xl mx-auto w-full p-3 sm:p-6 gap-4 sm:gap-6">
       {/* Inspected User or Public Preview banner */}
       {(inspectedUser || isPreviewPublic) && (
         <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-3 text-xs">

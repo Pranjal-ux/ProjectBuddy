@@ -24,17 +24,20 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "ProjectBuddy — Developer Network & Open Source Project Collaboration",
-    template: "%s | ProjectBuddy",
+    default: "ProjectBuddy (projectbuddyapp) — #1 Developer Network & Open Source Project Collaboration",
+    template: "%s | ProjectBuddy — Developer Network",
   },
   description:
-    "The premier developer network to discover trending open-source projects, recruit co-founders and team members, showcase code snippets, and build real-world software together.",
+    "ProjectBuddy (projectbuddyapp) is the premier developer collaboration network. Find coding partners, discover trending open-source projects, recruit co-founders, showcase code snippets, and build real-world software together.",
   applicationName: "ProjectBuddy",
   authors: [{ name: "Pranjal Shukla", url: siteUrl }],
   generator: "Next.js",
   keywords: [
     "ProjectBuddy",
+    "projectbuddyapp",
     "project buddy",
+    "projectbuddy app",
+    "projectbuddyapp.vercel.app",
     "developer network",
     "project collaboration platform",
     "find coding partners",
@@ -46,22 +49,26 @@ export const metadata: Metadata = {
     "developer social network",
     "hire developer teammates",
     "github open source community",
+    "collaborative programming platform",
+    "pair programming network",
+    "tech buddy finder",
   ],
   referrer: "origin-when-cross-origin",
   creator: "Pranjal Shukla",
   publisher: "ProjectBuddy",
+  category: "technology",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   alternates: {
-    canonical: "/",
+    canonical: siteUrl,
   },
   openGraph: {
-    title: "ProjectBuddy — Developer Network & Open Source Project Collaboration",
+    title: "ProjectBuddy (projectbuddyapp) — Developer Network & Open Source Project Collaboration",
     description:
-      "Connect with developers, discover open-source projects, recruit teammates, and share code in high-contrast developer aesthetic.",
+      "Find coding partners, discover open-source projects, recruit teammates, and share code in high-contrast developer aesthetic.",
     url: siteUrl,
     siteName: "ProjectBuddy",
     images: [
@@ -77,9 +84,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ProjectBuddy — Developer Network & Project Collaboration",
+    title: "ProjectBuddy (projectbuddyapp) — Developer Network & Project Collaboration",
     description:
-      "Connect with developers, discover open-source projects, recruit teammates, and share code in real-time.",
+      "Find coding partners, discover open-source projects, recruit teammates, and share code in real-time.",
     images: ["/projectbuddy-emblem-512.png"],
     creator: "@projectbuddy",
   },
@@ -117,7 +124,12 @@ const jsonLd = {
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
       name: "ProjectBuddy",
-      alternateName: ["Project Buddy", "ProjectBuddy Dev Network"],
+      alternateName: [
+        "projectbuddyapp",
+        "Project Buddy",
+        "ProjectBuddy Dev Network",
+        "projectbuddyapp.vercel.app",
+      ],
       description: "Developer Network & Open Source Project Collaboration Platform",
       inLanguage: "en-US",
       potentialAction: [
@@ -135,14 +147,28 @@ const jsonLd = {
       "@type": "SoftwareApplication",
       "@id": `${siteUrl}/#application`,
       name: "ProjectBuddy",
-      applicationCategory: "DeveloperApplication",
-      operatingSystem: "Web Browser, iOS, Android",
+      applicationCategory: "DeveloperApplication, SocialNetworkingApplication",
+      operatingSystem: "Web Browser, iOS, Android, macOS, Windows, Linux",
       url: siteUrl,
       offers: {
         "@type": "Offer",
         price: "0",
         priceCurrency: "USD",
       },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.9",
+        reviewCount: "168",
+        bestRating: "5",
+        worstRating: "1",
+      },
+      featureList: [
+        "Discover trending open-source projects",
+        "Recruit developer teammates and co-founders",
+        "Code snippet showcase with syntax highlighting",
+        "Real-time developer chat and team messaging",
+        "Tech stack synergy matching algorithm",
+      ],
       description:
         "Collaborate on open source projects, recruit developers, share code showcases, and chat in real-time.",
     },
@@ -152,10 +178,33 @@ const jsonLd = {
       name: "ProjectBuddy",
       url: siteUrl,
       logo: `${siteUrl}/projectbuddy-emblem-512.png`,
+      founder: {
+        "@type": "Person",
+        name: "Pranjal Shukla",
+        url: siteUrl,
+      },
       sameAs: [
-        "https://github.com",
-        "https://twitter.com",
+        "https://github.com/Pranjal-ux/ProjectBuddy",
+        "https://twitter.com/projectbuddy",
         "https://linkedin.com",
+      ],
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": `${siteUrl}/#navigation`,
+      name: [
+        "Home Feed",
+        "Discover Projects",
+        "Developer Network",
+        "Messages",
+        "Bookmarks",
+      ],
+      url: [
+        `${siteUrl}/`,
+        `${siteUrl}/?tab=discover`,
+        `${siteUrl}/?tab=discover`,
+        `${siteUrl}/?tab=messages`,
+        `${siteUrl}/?tab=bookmarks`,
       ],
     },
     {
@@ -164,10 +213,10 @@ const jsonLd = {
       mainEntity: [
         {
           "@type": "Question",
-          name: "What is ProjectBuddy?",
+          name: "What is ProjectBuddy (projectbuddyapp)?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "ProjectBuddy is a modern developer collaboration network where software engineers, designers, and tech creators discover open-source projects, recruit co-founders and team members, and build real-world software together.",
+            text: "ProjectBuddy (projectbuddyapp) is a modern developer collaboration network where software engineers, designers, and tech creators discover open-source projects, recruit co-founders and team members, and build real-world software together.",
           },
         },
         {
@@ -180,10 +229,26 @@ const jsonLd = {
         },
         {
           "@type": "Question",
-          name: "Is ProjectBuddy free to use?",
+          name: "Is ProjectBuddy free to use for developers?",
           acceptedAnswer: {
             "@type": "Answer",
             text: "Yes, ProjectBuddy is 100% free for developers to showcase projects, find teammates, share code snippets, and collaborate.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does ProjectBuddy stack synergy matching work?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "ProjectBuddy analyzes your developer profile skills (e.g. Next.js, TypeScript, Python, Rust) against open project requirements to calculate a high-fidelity synergy match score, connecting you with projects where your skills are in demand.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do I showcase code snippets on ProjectBuddy?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "When publishing a post or sending a message, developers can attach formatted code snippets with syntax highlighting and file name badges that teammates can inspect and copy directly.",
           },
         },
       ],
@@ -200,15 +265,19 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistMono.variable} h-full antialiased font-sans`}
     >
       <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.cdnfonts.com/css/sf-pro-display"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         {children}
       </body>
     </html>

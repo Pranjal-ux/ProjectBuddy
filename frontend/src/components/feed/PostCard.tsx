@@ -404,19 +404,23 @@ export function PostCard({
             </div>
           )}
 
-          {/* Code Snippet Box (Screen 1 tokens.config.css style) */}
-          {post.codeSnippet && (
+          {/* Code Snippet Box (Only show when someone actually posted code) */}
+          {Boolean(
+            post.codeSnippet &&
+              post.codeSnippet.code &&
+              post.codeSnippet.code.trim().length > 0
+          ) && (
             <div className="mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-lowest)] overflow-hidden font-mono text-xs">
               <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-container)]">
                 <div className="flex items-center gap-2">
                   <span className="size-2 rounded-full bg-emerald-500" />
                   <span className="text-xs text-[var(--text-secondary)]">
-                    {post.codeSnippet.filename}
+                    {post.codeSnippet?.filename || "snippet.ts"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-surface-high)] text-[var(--text-muted)] uppercase">
-                    {post.codeSnippet.language}
+                    {post.codeSnippet?.language || "code"}
                   </span>
                   <button
                     onClick={() => handleCopyCode(post.codeSnippet!.code)}
@@ -438,7 +442,7 @@ export function PostCard({
                 </div>
               </div>
               <pre className="p-3.5 text-[12px] leading-relaxed text-zinc-200 overflow-x-auto">
-                <code>{post.codeSnippet.code}</code>
+                <code>{post.codeSnippet?.code}</code>
               </pre>
             </div>
           )}

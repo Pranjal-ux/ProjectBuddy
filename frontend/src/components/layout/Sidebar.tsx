@@ -272,7 +272,7 @@ export function Sidebar({
       <aside
         className={cn(
           "hidden sm:flex shrink-0 h-screen sticky top-0 flex-col justify-between border-r border-[var(--border-subtle)] bg-[var(--bg-surface-low)] select-none",
-          "w-16 md:w-20 lg:w-64 xl:w-72 p-2 md:p-3 lg:p-5"
+          "w-16 md:w-20 lg:w-64 xl:w-72 2xl:w-80 p-2 md:p-3 lg:p-5 2xl:p-6"
         )}
       >
         <div className="flex flex-col gap-4 lg:gap-6">

@@ -104,9 +104,12 @@ const postSchema = new mongoose.Schema(
       imageUrl: { type: String, default: "" },
     },
     codeSnippet: {
-      filename: { type: String, default: "" },
-      language: { type: String, default: "javascript" },
-      code: { type: String, default: "" },
+      type: {
+        filename: { type: String, default: "" },
+        language: { type: String, default: "javascript" },
+        code: { type: String, default: "" },
+      },
+      default: undefined,
     },
     stats: {
       likes: { type: Number, default: 0 },
