@@ -1,141 +1,213 @@
 <div align="center">
 
-# 🚀 ProjectBuddy (projectbuddyapp)
+  <img src="frontend/public/projectbuddy-logo.png" alt="ProjectBuddy Logo" width="80" height="80" style="border-radius: 20px;" />
 
-### The Premier Developer Network & Open Source Project Collaboration Platform
+  # ProjectBuddy
+  ### *Stop coding in the dark. Build together. Ship faster.*
 
-[![Live App](https://img.shields.io/badge/Live_App-projectbuddyapp.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://projectbuddyapp.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React_19-20232a?style=for-the-badge&logo=react&logoColor=61dafb)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_v4-38bdf8?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Typography](https://img.shields.io/badge/Font-Apple_SF_Pro-white?style=for-the-badge&logo=apple&logoColor=black)](https://developer.apple.com/fonts/)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+  <p align="center">
+    <strong>The premier developer network to discover trending open-source projects, recruit co-founders, match tech stacks, and ship real-world software in real time.</strong>
+  </p>
 
-<br />
+  <!-- Badges Grid -->
+  <p align="center">
+    <a href="https://projectbuddyapp.vercel.app">
+      <img src="https://img.shields.io/badge/🚀_Live_Demo-projectbuddyapp.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    </a>
+    <a href="https://nextjs.org/">
+      <img src="https://img.shields.io/badge/Next.js_16-Turbopack-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+    </a>
+    <a href="https://react.dev/">
+      <img src="https://img.shields.io/badge/React_19-Modern_Hooks-20232a?style=for-the-badge&logo=react&logoColor=61dafb" alt="React" />
+    </a>
+    <a href="https://tailwindcss.com/">
+      <img src="https://img.shields.io/badge/Tailwind_v4-Engine-38bdf8?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+    </a>
+  </p>
+  <p align="center">
+    <a href="https://nodejs.org/">
+      <img src="https://img.shields.io/badge/Node.js-Express_REST-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+    </a>
+    <a href="https://www.mongodb.com/">
+      <img src="https://img.shields.io/badge/MongoDB-Atlas_Cloud-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+    </a>
+    <a href="https://developer.apple.com/fonts/">
+      <img src="https://img.shields.io/badge/Typography-Apple_SF_Pro-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Typography" />
+    </a>
+    <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
+  </p>
 
-<p align="center">
-  <strong>Stop coding alone.</strong> Find your dream co-builders, discover trending open-source initiatives, recruit teammates, and ship real-world software together.
-</p>
-
-[**Explore Live Demo**](https://projectbuddyapp.vercel.app) • [**Watch Launch Video**](#-launch-video--walkthrough) • [**Key Features**](#-key-features) • [**Tech Stack**](#-tech-stack) • [**Quick Start**](#-getting-started)
+  <p align="center">
+    <a href="#-watch-launch-film">🎬 Watch Launch Film</a> •
+    <a href="#-the-problem-vs-the-solution">💡 Why ProjectBuddy?</a> •
+    <a href="#-key-features">⚡ Features</a> •
+    <a href="#-architecture--tech-stack">🏗 Architecture</a> •
+    <a href="#-getting-started">🚀 Quick Start</a> •
+    <a href="#-api-reference">📡 API</a>
+  </p>
 
 </div>
 
 ---
 
-## 🎬 Launch Video & Walkthrough
+## 🎬 Watch Launch Film
 
-> *"Still coding alone? Find your team on ProjectBuddy."*
+> *"Every great developer has brilliant side projects that died in isolation. ProjectBuddy turns solo hacking into real-time team momentum."*
 
 <div align="center">
 
-[![ProjectBuddy Launch Video](brag-output/brag.jpg)](brag-output/brag.mp4)
+  <a href="https://projectbuddyapp.vercel.app/brag/brag.mp4" target="_blank" title="Click to watch ProjectBuddy Launch Film in 1080p">
+    <img src="brag-output/brag.jpg" alt="ProjectBuddy Official Launch Film" width="850" style="border-radius: 14px; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.7); border: 1px solid #27272a;" />
+  </a>
 
-*Click the preview above to watch the official **ProjectBuddy Launch Film** ([brag.mp4](brag-output/brag.mp4)), showcasing real-time team discovery, synergy match algorithms, and live collaboration.*
+  <br />
+
+  <p>
+    ▶️ <strong><a href="https://projectbuddyapp.vercel.app/brag/brag.mp4">Click Here to Play the Full 1080p Launch Film</a></strong> <em>(Opens in browser with soundtrack)</em><br />
+    <sub>Local file available at <code><a href="brag-output/brag.mp4">brag-output/brag.mp4</a></code> • Produced with Hyperframes</sub>
+  </p>
 
 </div>
 
+### 🎞️ What’s Inside the Film:
+1. **The Hook (0:00 - 0:03):** The universal developer dilemma: *"Still coding alone?"*
+2. **Project Discovery (0:03 - 0:08):** High-synergy open-source card reveal with required tech roles & team capacity.
+3. **The Instant Action (0:08 - 0:12):** Tactile one-click *"Request to Join Team"* submission.
+4. **The Collaboration Payoff (0:12 - 0:16):** Live acceptance notification & team chat transition with double-check read receipts.
+5. **The Punchline (0:16 - 0:19):** *"Build together. Ship faster."*
+
 ---
 
-## 🌟 Why ProjectBuddy?
+## 💡 The Problem vs. The Solution
 
-Every week, brilliant software engineers conceive game-changing projects that die in isolation because finding motivated, skilled co-builders is painful.
+<div align="center">
 
-**ProjectBuddy** bridges this gap:
-- **Discover Open Projects:** Browse vetted developer initiatives with transparent tech stack tags and clear open roles.
-- **Recruit Dream Teammates:** Broadcast open positions (Frontend, Backend, AI/ML, UI/UX, Smart Contracts) with live member capacity tracking.
-- **Synergy Matching:** Smart algorithm compares developer skills to project needs to compute an instant synergy match score.
-- **Real-Time Collaboration:** 1-on-1 direct messaging, team discussions, and code snippet reviews.
-- **Developer-Native Aesthetics:** Powered by authentic Apple SF Pro typography, dark charcoal and pitch-black OLED modes, with responsiveness across mobile, desktop, 1440p, and 4K ultra-wide monitors.
+| The Solo Hacking Struggle ❌ | The ProjectBuddy Experience 🚀 |
+|---|---|
+| **Endless Solitude:** Building ambitious ideas alone leads to burnout and abandoned GitHub repos. | **Instant Momentum:** Form teams around curated ideas with verified contributors who share your passion. |
+| **Mismatched Skills:** Struggling with frontend CSS when you're a backend/AI engineer (or vice-versa). | **Synergy Matching:** Intelligent stack alignment matches Python/Rust experts with Next.js/Tailwind artists. |
+| **No Structured Collaboration:** Chaotic Discord DMs, dead Slack groups, and ignored pull requests. | **Dedicated Dev Feed:** Native team slots (`2/4 devs`), join approvals, live DMs, and code showcases. |
+| **Generic SaaS Design:** Cluttered, bloated social networks with ads, tracking, and slow web fonts. | **Apple SF Pro Aesthetic:** Pitch-black OLED mode, ultra-clean typography, and responsive scaling from mobile to 4K. |
+
+</div>
 
 ---
 
 ## ⚡ Key Features
 
-| Feature | Description |
-|---|---|
-| 🔍 **Project Discovery** | Filter initiatives by categories (AI/ML, Web3, Fullstack, Mobile, DevOps) with synergy match percentages. |
-| 👥 **Team Recruitment Engine** | Post initiatives with open team slots (e.g., `2 / 4 devs`) and instant "Request to Join" workflow. |
-| 💻 **Clean Code Showcases** | Share formatted, syntax-highlighted code snippets with copy button — automatically hidden unless code is attached. |
-| 💬 **Live Developer Chat** | Twitter/X-style direct messages, unread counters, code attachments, and online indicators. |
-| 📊 **Developer Profiles** | Custom avatars, bio, role badges, GitHub/Twitter/LinkedIn social links, follower network, and bookmarked projects. |
-| 🔔 **Activity & Application Alerts** | Real-time notifications for incoming team join requests with 1-click Accept / Reject controls. |
-| 🌓 **Dual Visual Themes** | Seamless toggle between Charcoal Dark Mode and pure Pitch-Black OLED Mode. |
-| 📱 **Full Screen Responsiveness** | Tailored UI that scales gracefully from mobile viewports to 4K ultra-wide monitors. |
-| 🔎 **Google SEO Position #1** | Schema.org JSON-LD (`WebSite`, `SoftwareApplication`, `FAQPage`, `Organization`), semantic `<h1>` structure, robots.txt, and sitemap.xml. |
+### 1. 🔍 High-Synergy Project Discovery
+- Discover open-source projects across **AI/Machine Learning**, **Web3 & Blockchain**, **Fullstack Web**, **Mobile**, and **DevOps**.
+- **Stack Synergy Score:** Calculates a percentage match based on your profile skills against project requirements (e.g. *94% Synergy*).
+- Filter by *Actively Recruiting Slots*, *Trending / Most Liked*, or *High Synergy*.
+
+### 2. 👥 Team Recruitment Engine
+- Creators publish projects with explicit role vacancies (`Fullstack Engineer`, `UI/UX Designer`, `Smart Contract Dev`).
+- Live team capacity indicators (e.g., `Team: 2 / 4 members`).
+- **One-Click Applications:** Developers submit personalized join pitches with their role and GitHub profile.
+- Team leads receive instant Activity Alerts with **Accept** or **Reject** actions.
+
+### 3. 💻 Conditional Code Showcases
+- Share technical code snippets with syntax highlighting, language badges, and one-click copy buttons.
+- **Smart Display Guard:** Code snippet boxes only render when actual code is present, keeping discussion posts clean and uncluttered.
+
+### 4. 💬 Real-Time Developer Direct Messaging
+- Twitter/X-inspired message hub with conversation search, unread badge counters, and online presence.
+- Share code snippets inline inside chat bubbles with instant syntax highlighting.
+- Double-blue read receipts (`✓✓`) and emoji reactions.
+
+### 5. 🌓 Dual Visual Aesthetic & Apple SF Pro Typography
+- **Monochrome Dark Mode (Charcoal):** Smooth zinc undertones with high-contrast borders.
+- **Pitch-Black OLED Mode:** True `#000000` background optimized for OLED displays and battery efficiency.
+- **Apple SF Pro Typography:** Self-hosted native `woff2` font files with subpixel antialiasing and authentic Apple negative tracking (`letter-spacing: -0.012em`).
+
+### 6. 🖥️ Big Screen & Ultra-Wide Responsiveness
+- Centered layout architecture that scales gracefully on **1080p**, **1440p**, and **4K ultra-wide monitors**.
+- Constrained feed reading widths to prevent text lines from stretching thousands of pixels.
+- 3-column project and developer cards on `2xl` screens.
+
+### 7. 📈 Google Position #1 SEO Optimization
+- Comprehensive **Schema.org JSON-LD** structured data (`WebSite`, `SoftwareApplication`, `FAQPage`, `Organization`, `SiteNavigationElement`).
+- Crawlable semantic `<h1>` structure, rich meta descriptions, and Google Sitelinks integration.
+- Dedicated `robots.ts` and dynamic `sitemap.ts` with daily refresh frequency.
 
 ---
 
-## 🛠 Tech Stack
+## 🏗 Architecture & Tech Stack
 
-### Frontend (`/frontend`)
-- **Framework:** Next.js 16 (App Router with Turbopack)
-- **UI Library:** React 19
-- **Styling:** Tailwind CSS v4 & Vanilla CSS Variables
-- **Typography:** Self-hosted Apple SF Pro (`SF Pro Display` & `SF Pro Text` woff2) with native negative tracking
-- **Icons:** Lucide React & Custom SVG Brand Icons
-- **State & Context:** React Context API (`AuthContext`, `NotificationContext`)
-- **Deployment:** Vercel
+```mermaid
+graph TD
+    Client[Web Browser / Mobile / 4K Monitor] -->|Next.js 16 App Router| Frontend[Frontend UI - React 19]
+    Frontend -->|Apple SF Pro & Tailwind v4| UIComponents[PostCard, Feed, Messages, Modals]
+    Frontend -->|REST API Requests| Backend[Express.js Server]
+    Backend -->|JWT Auth Middleware| AuthController[Auth Controller]
+    Backend -->|CRUD Operations| PostController[Post & Team Controller]
+    Backend -->|Messaging| ChatController[Chat & Direct Message Controller]
+    Backend -->|Mongoose ODM| MongoDB[(MongoDB Atlas)]
+    AuthController -->|OTP Verification| Nodemailer[SMTP Mailer Service]
+```
 
-### Backend (`/backend`)
-- **Runtime:** Node.js (ES Modules)
-- **Framework:** Express.js
-- **Database:** MongoDB with Mongoose ODM
-- **Authentication:** JWT (JSON Web Tokens) with Secure OTP Email Verification via Nodemailer
-- **Architecture:** Controller-Service-Model RESTful API pattern
-- **Deployment:** Render / Node Cloud
+### Detailed Stack Breakdown:
+- **Client:** Next.js 16 (Turbopack), React 19, Tailwind CSS v4, Lucide Icons, clsx, tailwind-merge.
+- **Server:** Node.js, Express.js (ES Modules), Mongoose, JSON Web Tokens (JWT), bcryptjs.
+- **Database:** MongoDB Atlas (Cloud Database).
+- **Communication:** Nodemailer with SMTP transport for OTP verification.
+- **Deployment:** Vercel (Frontend Client) + Render / Cloud Server (Backend API).
 
 ---
 
 ## 🚀 Getting Started
 
-Follow these steps to run ProjectBuddy locally on your machine:
+Run ProjectBuddy on your local machine in under 3 minutes:
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18.0.0 or later)
+- [Node.js](https://nodejs.org/) `>= 18.0.0`
 - [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
-- [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas URI)
+- A free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster or local MongoDB instance
 
-### 1. Clone the Repository
+---
+
+### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/Pranjal-ux/ProjectBuddy.git
 cd ProjectBuddy
 ```
 
-### 2. Configure Backend
+---
+
+### Step 2: Set Up Backend Server
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file in `backend/`:
+Create a `.env` file in the `backend/` directory:
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/projectbuddy?retryWrites=true&w=majority
-JWT_SECRET=your_super_secret_jwt_key
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/projectbuddy?retryWrites=true&w=majority
+JWT_SECRET=super_secure_developer_jwt_secret_key_123!
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_specific_password
+SMTP_PASS=your_google_app_password
 CLIENT_URL=http://localhost:3000
 ```
 
-Start the backend API server:
+Start the backend server:
 ```bash
 npm run dev
-# Server runs on http://localhost:5000
+# ✅ Backend API live on http://localhost:5000
 ```
 
-### 3. Configure Frontend
-Open a new terminal:
+---
+
+### Step 3: Set Up Frontend Client
+Open a second terminal window:
 ```bash
 cd frontend
 npm install
 ```
 
-Create a `.env.local` file in `frontend/`:
+Create a `.env.local` file in the `frontend/` directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -144,76 +216,69 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 Start the Next.js development server:
 ```bash
 npm run dev
-# Frontend runs on http://localhost:3000
+# ✅ ProjectBuddy live on http://localhost:3000
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) in your browser!
+Open [http://localhost:3000](http://localhost:3000) in your browser and start collaborating!
 
 ---
 
-## 📂 Project Structure
+## 📡 API Reference
 
-```
-ProjectBuddy/
-├── README.md               # Root Project Documentation (You are here)
-├── DEPLOYMENT.md           # Production Deployment Guide (Vercel + Render)
-├── render.yaml             # Render Blueprint Configuration
-├── brag-output/            # Official Launch Video Assets
-│   ├── brag.mp4            # High-Definition 1080p Launch Film
-│   ├── brag.jpg            # Poster Frame & Social Thumbnail
-│   └── brag-plan.md        # Script & Storyboard Design Document
-├── backend/                # Node.js + Express REST API
-│   ├── src/
-│   │   ├── controllers/    # Request Handlers (Posts, Auth, Chat, Activities)
-│   │   ├── middleware/     # Auth & Validation Middlewares
-│   │   ├── models/         # Mongoose Schemas (User, Post, Chat, JoinRequest)
-│   │   ├── routes/         # Express Route Definitions
-│   │   └── server.js       # Entrypoint & DB Connection
-│   └── package.json
-└── frontend/               # Next.js 16 + React 19 Client
-    ├── public/
-    │   ├── fonts/          # Self-hosted Apple SF Pro woff2 Font Assets
-    │   └── projectbuddy-*  # Brand Logos & Manifest Assets
-    ├── src/
-    │   ├── app/            # App Router (layout, page, robots, sitemap)
-    │   ├── components/
-    │   │   ├── feed/       # PostCard, PostComposer, FeedHeader
-    │   │   ├── layout/     # Sidebar, RightSidebar
-    │   │   ├── modals/     # CreateProject, JoinTeam, Auth Modals
-    │   │   └── views/      # Home, Discover, Messages, Profile, Activity
-    │   ├── context/        # Auth & Notification State Providers
-    │   └── lib/            # API Client & Utility Helpers
-    └── package.json
-```
-
----
-
-## 📡 Core API Endpoints
-
+### 🔐 Authentication (`/api/auth`)
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/auth/register` | Register new developer account & trigger OTP |
-| `POST` | `/api/auth/verify-otp` | Verify OTP code & issue authentication token |
-| `POST` | `/api/auth/login` | Log in with email / handle & password |
-| `GET` | `/api/posts` | Fetch live feed posts with synergy filtering |
-| `POST` | `/api/posts` | Create new project post or code snippet |
-| `POST` | `/api/posts/:id/like` | Toggle like on a project post |
-| `POST` | `/api/join-requests` | Submit request to join a project team |
-| `GET` | `/api/chats/:user` | Retrieve conversations & direct message threads |
-| `POST` | `/api/chats/message` | Send real-time chat message with snippet |
-| `GET` | `/api/activities/:user`| Retrieve alerts, joining requests & team status |
+| `POST` | `/api/auth/register` | Register account and dispatch 6-digit OTP code |
+| `POST` | `/api/auth/verify-otp` | Verify OTP code and return JWT authentication token |
+| `POST` | `/api/auth/resend-otp` | Resend fresh 6-digit verification code |
+| `POST` | `/api/auth/login` | Sign in with email/handle and password |
+
+### 📝 Posts & Initiatives (`/api/posts`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/posts` | Fetch live feed posts with optional handle/tag filters |
+| `POST` | `/api/posts` | Publish a new initiative, team post, or code snippet |
+| `POST` | `/api/posts/:id/like` | Toggle like status on a post |
+| `POST` | `/api/posts/:id/bookmark` | Toggle bookmark status on a post |
+| `POST` | `/api/posts/:id/comment` | Add comment to an existing project post |
+
+### 🤝 Teams & Applications (`/api/join-requests`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/join-requests` | Submit application pitch to join an open project team |
+| `GET` | `/api/join-requests/pending`| Retrieve pending requests for author's projects |
+| `POST` | `/api/join-requests/:id/respond`| Accept or reject a developer join application |
+
+### 💬 Messaging & Notifications (`/api/chats`, `/api/activities`)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/chats/:user` | List conversation threads and unread count |
+| `POST` | `/api/chats/message` | Send direct message with optional code snippet |
+| `GET` | `/api/activities/:user` | Retrieve real-time collaboration alerts and statuses |
+
+---
+
+## 🗺️ Product Roadmap
+
+- [x] **v0.1 Public Beta:** Real-time post feed, team creation, join applications, direct chat, and bookmarks.
+- [x] **SEO Overhaul:** Schema.org JSON-LD structured data, Google Sitelinks, OpenGraph & Twitter preview tags.
+- [x] **Visual Excellence:** Authentic Apple SF Pro self-hosted typography with OLED/Charcoal visual themes.
+- [x] **Large Screen Engine:** 4K, 1440p, and ultra-wide responsive container scaling.
+- [ ] **v0.2 Upcoming:** Direct GitHub OAuth 2.0 repository sync (pull open issues directly into team posts).
+- [ ] **v0.2 Upcoming:** Real-time voice rooms for sprint planning & pair programming.
+- [ ] **v0.3 Upcoming:** Verified Developer NFTs / On-Chain Contribution badges.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions make the open-source community thrive! To contribute:
+We love contributions! If you have an idea or bug fix:
 
-1. **Fork** the Project.
-2. **Create a Feature Branch** (`git checkout -b feature/AmazingFeature`).
-3. **Commit Your Changes** (`git commit -m 'Add some AmazingFeature'`).
-4. **Push to the Branch** (`git push origin feature/AmazingFeature`).
-5. **Open a Pull Request**.
+1. **Fork** the Project
+2. **Create your Feature Branch** (`git checkout -b feature/CoolFeature`)
+3. **Commit your Changes** (`git commit -m 'feat: Add CoolFeature'`)
+4. **Push to the Branch** (`git push origin feature/CoolFeature`)
+5. **Open a Pull Request**
 
 ---
 
@@ -225,8 +290,10 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 <div align="center">
 
-Built with ❤️ by **[Pranjal Shukla](https://github.com/Pranjal-ux)** for developers worldwide.
+  **Built with passion by [Pranjal Shukla](https://github.com/Pranjal-ux) & the Open Source Community.**
 
-**[Launch ProjectBuddy](https://projectbuddyapp.vercel.app)** • **[Star on GitHub](https://github.com/Pranjal-ux/ProjectBuddy)**
+  [**Launch ProjectBuddy**](https://projectbuddyapp.vercel.app) • [**Report a Bug**](https://github.com/Pranjal-ux/ProjectBuddy/issues) • [**Request a Feature**](https://github.com/Pranjal-ux/ProjectBuddy/issues)
+
+  ⭐ **If you find ProjectBuddy useful, please star the repo on GitHub!** ⭐
 
 </div>
