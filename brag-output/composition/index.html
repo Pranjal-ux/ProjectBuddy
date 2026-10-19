@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>ProjectBuddy Launch</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #09090b;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Base composition stage */
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #09090b;
+      }
+
+      /* Ambient background lighting */
+      .ambient-glow {
+        position: absolute;
+        width: 800px;
+        height: 800px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+        pointer-events: none;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        filter: blur(80px);
+      }
+      .ambient-glow-2 {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+        pointer-events: none;
+        top: 20%;
+        right: 15%;
+        filter: blur(60px);
+      }
+
+      /* Subtle grid overlay */
+      .grid-backdrop {
+        position: absolute;
+        inset: 0;
+        background-image: 
+          linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 64px 64px;
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      /* Scene container default */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Pill badges */
+      .dev-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 18px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+      }
+      .dev-badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #3b82f6;
+        box-shadow: 0 0 10px #3b82f6;
+      }
+
+      /* Typography */
+      .hero-title {
+        font-size: 82px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        text-align: center;
+        color: #ffffff;
+        margin-bottom: 24px;
+      }
+      .hero-sub {
+        font-size: 26px;
+        font-weight: 400;
+        color: #d4d4d8;
+        text-align: center;
+        max-width: 880px;
+        line-height: 1.4;
+      }
+
+      /* Glassmorphic Project Card */
+      .project-card {
+        width: 960px;
+        background: rgba(18, 18, 22, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 24px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        padding: 40px;
+        position: relative;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+      }
+      .author-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      }
+      .author-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .author-handle {
+        font-size: 15px;
+        color: #d4d4d8;
+        font-weight: 500;
+      }
+      .team-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 9999px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .project-title {
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .project-desc {
+        font-size: 19px;
+        line-height: 1.5;
+        color: #d4d4d8;
+        margin-bottom: 28px;
+      }
+
+      .roles-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .role-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #d4d4d8;
+        font-weight: 600;
+      }
+      .role-pill {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+      }
+      .role-pill.highlight {
+        border-color: rgba(96, 165, 250, 0.4);
+        background: rgba(59, 130, 246, 0.15);
+        color: #93c5fd;
+      }
+
+      .card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .tags-list {
+        display: flex;
+        gap: 8px;
+      }
+      .tech-tag {
+        font-size: 13px;
+        font-family: monospace;
+        color: #e4e4e7;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 6px 12px;
+        border-radius: 6px;
+      }
+
+      .join-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 28px;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #09090b;
+        font-size: 17px;
+        font-weight: 700;
+        border: none;
+        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25);
+        cursor: pointer;
+        position: relative;
+      }
+      .join-button.clicked {
+        transform: scale(0.96);
+        background: #93c5fd;
+      }
+
+      /* Animated simulated cursor */
+      #simulated-cursor {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        pointer-events: none;
+        z-index: 100;
+        top: 900px;
+        left: 1500px;
+        opacity: 0;
+      }
+      .click-ripple {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        top: -8px;
+        left: -8px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Scene 3: Match & Chat Interface */
+      .toast-alert {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 32px;
+        border-radius: 100px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #34d399;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .chat-window {
+        width: 900px;
+        background: rgba(15, 15, 18, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      }
+      .chat-chrome {
+        background: rgba(24, 24, 27, 0.9);
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .chat-channel {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .chat-members {
+        font-size: 14px;
+        color: #34d399;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .chat-body {
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .chat-msg {
+        max-width: 680px;
+        display: flex;
+        gap: 14px;
+        opacity: 0;
+      }
+      .chat-msg.incoming {
+        align-self: flex-start;
+      }
+      .chat-msg.outgoing {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+      .msg-bubble {
+        padding: 16px 22px;
+        border-radius: 18px;
+        font-size: 17px;
+        line-height: 1.45;
+      }
+      .chat-msg.incoming .msg-bubble {
+        background: #27272a;
+        color: #ffffff;
+        border-top-left-radius: 4px;
+      }
+      .chat-msg.outgoing .msg-bubble {
+        background: #3b82f6;
+        color: #ffffff;
+        border-top-right-radius: 4px;
+      }
+      .msg-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+        font-size: 13px;
+        color: #d4d4d8;
+        margin-top: 6px;
+      }
+      .double-tick {
+        display: inline-flex;
+        align-items: center;
+        color: #93c5fd;
+        font-weight: 800;
+        letter-spacing: -2px;
+      }
+
+      /* Scene 4: Ecosystem 3 pillars */
+      .pillar-container {
+        display: flex;
+        gap: 32px;
+        width: 1200px;
+        justify-content: center;
+        margin-top: 40px;
+      }
+      .feature-pillar {
+        flex: 1;
+        background: rgba(18, 18, 22, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px;
+        padding: 36px 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+        opacity: 0;
+      }
+      .pillar-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+      }
+      .pillar-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .pillar-desc {
+        font-size: 16px;
+        color: #d4d4d8;
+        line-height: 1.5;
+      }
+
+      /* Scene 5: Outro Brand */
+      .brand-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .emblem-wrapper {
+        position: relative;
+        width: 130px;
+        height: 130px;
+        margin-bottom: 30px;
+      }
+      .emblem-glow {
+        position: absolute;
+        inset: -20px;
+        border-radius: 36px;
+        background: rgba(255, 255, 255, 0.2);
+        filter: blur(30px);
+      }
+      .emblem-squircle {
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        background: #000000;
+        border: 1.5px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-wordmark {
+        font-size: 64px;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .brand-wordmark .pulse-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ffffff;
+        margin-left: 10px;
+        box-shadow: 0 0 16px #ffffff;
+      }
+      .punchline-text {
+        font-size: 28px;
+        font-weight: 500;
+        color: #d4d4d8;
+        margin-bottom: 28px;
+      }
+      .site-url-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 28px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="19.5"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Background elements -->
+      <div class="grid-backdrop"></div>
+      <div class="ambient-glow" id="ambient-glow"></div>
+      <div class="ambient-glow-2"></div>
+
+      <!-- Simulated Pointer Cursor -->
+      <div id="simulated-cursor">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 3.5L18.5 10.5L12 12.5L9.5 19L5.5 3.5Z" fill="#FFFFFF" stroke="#000000" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <div class="click-ripple" id="click-ripple"></div>
+      </div>
+
+      <!-- ================= SCENE 1: THE HOOK (0.0s - 3.5s) ================= -->
+      <div class="scene clip" id="scene-1" data-start="0" data-duration="3.5" data-track-index="1">
+        <div class="dev-badge" id="s1-badge">
+          <span class="dot"></span>
+          <span>DEV COLLABORATION NETWORK</span>
+        </div>
+        <h1 class="hero-title" id="s1-title">
+          Still coding alone?
+        </h1>
+        <p class="hero-sub" id="s1-sub">
+          Stop letting great ideas die in private repos. Meet your co-builders on ProjectBuddy.
+        </p>
+      </div>
+
+      <!-- ================= SCENE 2: PROJECT DISCOVERY (3.5s - 8.0s) ================= -->
+      <div class="scene clip" id="scene-2" data-start="3.5" data-duration="4.5" data-track-index="2">
+        <div class="dev-badge">
+          <span class="dot"></span>
+          <span>OPEN TEAMS RECRUITING NOW</span>
+        </div>
+        <div class="project-card" id="s2-card">
+          <div class="card-header">
+            <div class="author-group">
+              <div class="avatar">AC</div>
+              <div>
+                <div class="author-name">
+                  <span>Alex Chen</span>
+                  <span style="color:#60a5fa; font-size:16px;">✓</span>
+                </div>
+                <div class="author-handle">@alexchen • Lead Architect</div>
+              </div>
+            </div>
+            <div class="team-status-badge">
+              <span style="font-size: 16px;">👥</span>
+              <span>2 of 4 Builders Joined</span>
+            </div>
+          </div>
+
+          <div class="project-title">
+            <span>DevPulse AI</span>
+            <span style="font-size: 14px; font-weight: 600; padding: 4px 10px; background: rgba(16, 185, 129, 0.15); color: #34d399; border-radius: 6px; border: 1px solid rgba(16,185,129,0.3);">ACTIVE RECRUITING</span>
+          </div>
+          <div class="project-desc">
+            An open-source telemetry & analytics dashboard for Next.js applications. Real-time traces, lightweight SDK, zero vendor lock-in.
+          </div>
+
+          <div class="roles-row">
+            <span class="role-label">Looking for:</span>
+            <span class="role-pill highlight">⚡ Fullstack Dev (Next.js)</span>
+            <span class="role-pill highlight">🎨 UI/UX Designer</span>
+          </div>
+
+          <div class="card-footer">
+            <div class="tags-list">
+              <span class="tech-tag">Next.js 15</span>
+              <span class="tech-tag">TypeScript</span>
+              <span class="tech-tag">TailwindCSS</span>
+              <span class="tech-tag">MongoDB</span>
+            </div>
+            <button class="join-button" id="join-btn">
+              <span>Request to Join Team</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 3: REAL-TIME MATCH & CHAT (8.0s - 13.0s) ================= -->
+      <div class="scene clip" id="scene-3" data-start="8.0" data-duration="5.0" data-track-index="3">
+        <div class="toast-alert" id="s3-toast">
+          <span>✓</span>
+          <span>Request Accepted! You're now on the DevPulse team</span>
+        </div>
+
+        <div class="chat-window" id="s3-chat">
+          <div class="chat-chrome">
+            <div class="chat-channel">
+              <span style="color: #60a5fa;">#</span>
+              <span>devpulse-core</span>
+            </div>
+            <div class="chat-members">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block;"></span>
+              <span>3 members online</span>
+            </div>
+          </div>
+
+          <div class="chat-body">
+            <!-- Incoming message -->
+            <div class="chat-msg incoming" id="s3-msg-1">
+              <div class="avatar" style="width: 44px; height: 44px; font-size: 16px;">AC</div>
+              <div>
+                <div class="msg-bubble">
+                  Welcome to the team! Just pushed the latest API contracts. Ready to build the Next.js dashboard together? 🔥
+                </div>
+                <div class="msg-status-row" style="justify-content: flex-start;">
+                  <span>Alex Chen • 10:48 AM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Outgoing message -->
+            <div class="chat-msg outgoing" id="s3-msg-2">
+              <div class="avatar" style="width: 44px; height: 44px; font-size: 16px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">YOU</div>
+              <div>
+                <div class="msg-bubble">
+                  Stoked to build with you all! Cloned the repo and spinning up the UI components now 🚀
+                </div>
+                <div class="msg-status-row">
+                  <span>10:49 AM</span>
+                  <span class="double-tick" id="s3-ticks">✓✓</span>
+                  <span style="color: #93c5fd; font-weight: 600;">Read</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 4: DEVELOPER ECOSYSTEM (13.0s - 16.5s) ================= -->
+      <div class="scene clip" id="scene-4" data-start="13.0" data-duration="3.5" data-track-index="4">
+        <div class="dev-badge">
+          <span class="dot"></span>
+          <span>BUILT FOR BUILDERS</span>
+        </div>
+        <h2 class="hero-title" style="font-size: 56px; margin-bottom: 0px;" id="s4-title">
+          Everything you need to ship together.
+        </h2>
+
+        <div class="pillar-container">
+          <div class="feature-pillar" id="pillar-1">
+            <div class="pillar-icon">🚀</div>
+            <div class="pillar-title">Open-Source Projects</div>
+            <div class="pillar-desc">
+              Discover real-world projects actively looking for your exact skills and stack.
+            </div>
+          </div>
+
+          <div class="feature-pillar" id="pillar-2">
+            <div class="pillar-icon">⚡</div>
+            <div class="pillar-title">Real-Time Team Chat</div>
+            <div class="pillar-desc">
+              Coordinate instantly with message delivery status, read receipts, and code sharing.
+            </div>
+          </div>
+
+          <div class="feature-pillar" id="pillar-3">
+            <div class="pillar-icon">🤝</div>
+            <div class="pillar-title">Find Co-Founders</div>
+            <div class="pillar-desc">
+              Match with passionate engineers, designers, and creators who share your vision.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 5: OUTRO & BRAND PAYOFF (16.5s - 19.5s) ================= -->
+      <div class="scene clip" id="scene-5" data-start="16.5" data-duration="3.0" data-track-index="5">
+        <div class="brand-box" id="s5-brand">
+          <div class="emblem-wrapper" id="s5-emblem">
+            <div class="emblem-glow"></div>
+            <div class="emblem-squircle">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 84px; height: 84px;">
+                <path
+                  d="M 74.03 10.40 L 70.61 8.55 L 66.69 7.08 L 62.28 6.20 L 59.64 6.00 L 16.18 6.00 L 14.32 6.59 L 13.34 7.47 L 12.56 9.13 L 12.56 25.38 L 12.95 27.63 L 13.83 30.18 L 14.91 32.14 L 16.28 34.00 L 17.75 35.46 L 19.21 36.54 L 21.76 38.01 L 24.60 38.99 L 26.36 39.38 L 28.02 39.48 L 28.32 39.87 L 25.48 40.46 L 20.68 42.41 L 18.63 43.88 L 15.49 47.01 L 13.93 49.76 L 12.95 52.40 L 12.56 54.26 L 12.46 87.54 L 12.56 91.26 L 13.05 92.43 L 13.73 93.22 L 15.20 93.90 L 20.88 93.90 L 24.11 93.31 L 26.26 92.43 L 27.93 91.45 L 28.91 90.67 L 31.06 88.32 L 32.33 85.78 L 33.02 82.74 L 33.02 57.88 L 33.41 55.24 L 34.78 52.10 L 36.34 50.05 L 38.40 48.19 L 41.34 46.62 L 42.71 46.13 L 45.06 45.74 L 54.06 45.64 L 53.87 45.25 L 52.89 44.76 L 51.13 42.90 L 50.24 41.14 L 49.95 39.18 L 50.05 37.03 L 50.64 35.37 L 51.52 34.09 L 53.08 32.53 L 53.87 32.04 L 56.12 31.25 L 58.27 31.16 L 59.64 31.35 L 61.40 32.14 L 63.46 33.80 L 64.83 36.15 L 65.22 38.11 L 64.93 40.75 L 63.85 43.00 L 62.38 44.57 L 60.91 45.35 L 60.72 45.64 L 64.14 46.13 L 67.08 47.21 L 69.82 49.07 L 71.19 50.64 L 71.39 51.22 L 69.04 52.79 L 66.69 53.77 L 62.38 54.75 L 46.43 54.75 L 43.00 55.73 L 40.55 57.29 L 39.09 58.76 L 38.20 60.13 L 37.32 61.99 L 36.83 64.24 L 36.83 81.18 L 37.72 80.49 L 43.20 73.25 L 45.94 70.51 L 47.31 69.63 L 51.22 68.16 L 52.89 67.96 L 59.05 67.96 L 62.48 67.57 L 66.69 66.59 L 69.43 65.61 L 73.35 63.66 L 75.40 62.28 L 78.44 59.74 L 81.18 56.61 L 82.94 54.06 L 84.51 51.03 L 86.36 45.94 L 87.25 41.34 L 87.44 38.60 L 87.25 32.43 L 86.76 29.49 L 85.88 26.16 L 84.31 22.25 L 81.57 17.55 L 78.73 14.22 L 77.26 12.85 Z M 35.56 20.00 L 37.13 20.00 L 38.99 20.39 L 40.36 20.88 L 41.04 21.37 L 41.24 21.37 L 43.29 23.13 L 44.27 24.40 L 44.47 24.99 L 44.86 25.58 L 44.86 25.87 L 45.25 26.65 L 45.55 29.10 L 45.45 30.67 L 45.25 31.16 L 45.25 31.65 L 44.86 32.33 L 44.86 32.63 L 44.27 33.90 L 42.90 35.56 L 41.04 37.03 L 39.58 37.72 L 39.38 37.91 L 37.03 38.40 L 35.27 38.40 L 33.21 37.91 L 33.02 37.72 L 32.14 37.52 L 31.45 36.93 L 30.37 36.34 L 29.49 35.56 L 28.71 34.58 L 28.51 34.09 L 28.12 33.60 L 27.93 32.92 L 27.63 32.53 L 27.54 31.94 L 27.24 31.45 L 27.05 29.88 L 27.14 27.83 L 27.63 26.07 L 28.71 24.01 L 29.69 22.84 L 30.67 21.96 L 31.06 21.76 L 31.16 21.56 L 31.84 21.27 L 32.33 20.88 L 32.82 20.78 L 33.02 20.59 L 33.60 20.39 L 34.09 20.39 Z"
+                  fill="#FFFFFF"
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div class="brand-wordmark" id="s5-name">
+            <span>Project</span>
+            <span style="font-weight: 900; margin-left: 2px;">Buddy</span>
+            <span class="pulse-dot"></span>
+          </div>
+
+          <div class="punchline-text" id="s5-punchline">
+            Build together. Ship faster.
+          </div>
+
+          <div class="site-url-pill" id="s5-url">
+            <span>🌐</span>
+            <span>projectbuddyapp.vercel.app</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= AUDIO TRACKS ================= -->
+      <audio
+        id="bg-music"
+        data-start="0"
+        data-duration="19.5"
+        data-track-index="10"
+        data-volume="0.32"
+        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
+      ></audio>
+
+      <!-- Key SFX -->
+      <audio
+        id="sfx-key"
+        data-start="0.4"
+        data-duration="0.25"
+        data-track-index="11"
+        data-volume="0.6"
+        src="assets/sfx/keyboard/keypress-001.wav"
+      ></audio>
+      <audio
+        id="sfx-card"
+        data-start="3.5"
+        data-duration="0.5"
+        data-track-index="12"
+        data-volume="0.6"
+        src="assets/sfx/casino/card-slide-1.ogg"
+      ></audio>
+      <audio
+        id="sfx-click"
+        data-start="7.4"
+        data-duration="0.01"
+        data-track-index="13"
+        data-volume="0.8"
+        src="assets/sfx/interface/click_003.ogg"
+      ></audio>
+      <audio
+        id="sfx-accept"
+        data-start="8.1"
+        data-duration="0.11"
+        data-track-index="14"
+        data-volume="0.65"
+        src="assets/sfx/interface/drop_001.ogg"
+      ></audio>
+      <audio
+        id="sfx-msg1"
+        data-start="9.2"
+        data-duration="0.06"
+        data-track-index="15"
+        data-volume="0.55"
+        src="assets/sfx/ui/click2.ogg"
+      ></audio>
+      <audio
+        id="sfx-msg2"
+        data-start="10.8"
+        data-duration="0.06"
+        data-track-index="16"
+        data-volume="0.55"
+        src="assets/sfx/ui/click2.ogg"
+      ></audio>
+      <audio
+        id="sfx-pillar"
+        data-start="13.2"
+        data-duration="0.5"
+        data-track-index="17"
+        data-volume="0.55"
+        src="assets/sfx/casino/card-slide-1.ogg"
+      ></audio>
+      <audio
+        id="sfx-logo"
+        data-start="16.5"
+        data-duration="1.2"
+        data-track-index="18"
+        data-volume="0.75"
+        src="assets/sfx/impact/impactBell_heavy_000.ogg"
+      ></audio>
+    </div>
+
+    <!-- Timeline Animation Script -->
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // Subtle breathing on background glow
+      tl.to("#ambient-glow", {
+        scale: 1.15,
+        opacity: 0.9,
+        duration: 9.75,
+        yoyo: true,
+        repeat: 1,
+        ease: "sine.inOut"
+      }, 0);
+
+      /* ==================== SCENE 1 (0.0s - 3.5s) ==================== */
+      tl.set("#scene-1", { opacity: 1 }, 0);
+      tl.fromTo("#s1-badge", 
+        { opacity: 0, y: -20 }, 
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 
+        0.3
+      );
+      tl.fromTo("#s1-title", 
+        { opacity: 0, scale: 0.95, y: 30 }, 
+        { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: "power3.out" }, 
+        0.5
+      );
+      tl.fromTo("#s1-sub", 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 
+        0.9
+      );
+      // Exit Scene 1
+      tl.to("#scene-1", { opacity: 0, scale: 0.98, duration: 0.4, ease: "power2.in" }, 3.1);
+
+      /* ==================== SCENE 2 (3.5s - 8.0s) ==================== */
+      tl.set("#scene-2", { opacity: 1 }, 3.5);
+      tl.fromTo("#s2-card", 
+        { opacity: 0, y: 60, scale: 0.94 }, 
+        { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 
+        3.5
+      );
+
+      // Simulated cursor motion to button
+      tl.set("#simulated-cursor", { opacity: 1 }, 4.8);
+      tl.fromTo("#simulated-cursor", 
+        { x: 1300, y: 850 }, 
+        { x: 1280, y: 645, duration: 1.6, ease: "power2.inOut" }, 
+        5.2
+      );
+
+      // Button hover state
+      tl.to("#join-btn", { scale: 1.04, duration: 0.3, ease: "power2.out" }, 6.8);
+
+      // Click at 7.4s
+      tl.to("#join-btn", { scale: 0.94, backgroundColor: "#93c5fd", duration: 0.15, ease: "power1.inOut" }, 7.4);
+      tl.fromTo("#click-ripple", 
+        { opacity: 1, scale: 0.5 }, 
+        { opacity: 0, scale: 2.2, duration: 0.4, ease: "power2.out" }, 
+        7.4
+      );
+      tl.to("#join-btn", { scale: 1, backgroundColor: "#ffffff", duration: 0.2, ease: "power2.out" }, 7.55);
+
+      // Exit Scene 2 & cursor
+      tl.to("#simulated-cursor", { opacity: 0, duration: 0.2 }, 7.8);
+      tl.to("#scene-2", { opacity: 0, scale: 1.03, duration: 0.4, ease: "power2.in" }, 7.7);
+
+      /* ==================== SCENE 3 (8.0s - 13.0s) ==================== */
+      tl.set("#scene-3", { opacity: 1 }, 8.0);
+      // Toast notification arrival
+      tl.fromTo("#s3-toast", 
+        { opacity: 0, y: -40, scale: 0.9 }, 
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 
+        8.1
+      );
+      // Chat window
+      tl.fromTo("#s3-chat", 
+        { opacity: 0, y: 40, scale: 0.96 }, 
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 
+        8.3
+      );
+      // Incoming message from Alex Chen
+      tl.fromTo("#s3-msg-1", 
+        { opacity: 0, x: -30 }, 
+        { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 
+        9.2
+      );
+      // Outgoing reply message
+      tl.fromTo("#s3-msg-2", 
+        { opacity: 0, x: 30 }, 
+        { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 
+        10.8
+      );
+      // Double blue ticks pop
+      tl.fromTo("#s3-ticks", 
+        { scale: 0.4, opacity: 0 }, 
+        { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 
+        11.5
+      );
+      // Exit Scene 3
+      tl.to("#scene-3", { opacity: 0, y: -20, duration: 0.4, ease: "power2.in" }, 12.7);
+
+      /* ==================== SCENE 4 (13.0s - 16.5s) ==================== */
+      tl.set("#scene-4", { opacity: 1 }, 13.0);
+      tl.fromTo("#s4-title", 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        13.1
+      );
+      tl.fromTo("#pillar-1", 
+        { opacity: 0, y: 40 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        13.3
+      );
+      tl.fromTo("#pillar-2", 
+        { opacity: 0, y: 40 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        13.7
+      );
+      tl.fromTo("#pillar-3", 
+        { opacity: 0, y: 40 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        14.1
+      );
+      // Exit Scene 4
+      tl.to("#scene-4", { opacity: 0, scale: 0.97, duration: 0.4, ease: "power2.in" }, 16.2);
+
+      /* ==================== SCENE 5 (16.5s - 19.5s) ==================== */
+      tl.set("#scene-5", { opacity: 1 }, 16.5);
+      tl.fromTo("#s5-emblem", 
+        { opacity: 0, scale: 0.7 }, 
+        { opacity: 1, scale: 1, duration: 0.7, ease: "back.out(1.5)" }, 
+        16.5
+      );
+      tl.fromTo("#s5-name", 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        16.9
+      );
+      tl.fromTo("#s5-punchline", 
+        { opacity: 0, y: 15 }, 
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 
+        17.3
+      );
+      tl.fromTo("#s5-url", 
+        { opacity: 0, scale: 0.9 }, 
+        { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 
+        17.7
+      );
+
+      // Register timeline for Hyperframes seek/render engine
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
